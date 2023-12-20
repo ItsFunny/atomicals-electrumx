@@ -787,6 +787,7 @@ class BlockProcessor:
     # Spend all of the atomicals at a location
     def spend_atomicals_utxo(self, tx_hash: bytes, tx_idx: int, live_run) -> bytes:
         '''Spend the atomicals entry for UTXO and return atomicals[].'''
+        self.logger.info(f'tx_hash={hash_to_hex_str(tx_hash)}');
         idx_packed = pack_le_uint32(tx_idx)
         location_id = tx_hash + idx_packed
         cache_map = self.atomicals_utxo_cache.get(location_id)
@@ -1636,7 +1637,7 @@ class BlockProcessor:
         self.logger.info(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} return ft_atomicals={ft_atomicals} atomical_id_to_expected_outs_map={atomical_id_to_expected_outs_map}')
         sanity_check_sums = {}
         for atomical_id, outputs_to_color in atomical_id_to_expected_outs_map.items():
-            sanity_check_sums[atomical_id] = 0
+            sanity_check_sums[atomical_id] = 0 # 开始遍历output ,相当于如果是合法的output_index 就会记录一下
             for expected_output_index in outputs_to_color:
                 # only perform the db updates if it is a live run
                 if live_run:
@@ -1686,7 +1687,10 @@ class BlockProcessor:
     def build_atomical_id_info_map(self, map_atomical_ids_to_info, atomicals_entry_list, txin_index):
         for atomicals_entry in atomicals_entry_list:
             atomical_id = atomicals_entry['atomical_id']
+            # atomicals_entry['data']: hashX + scripthash + value
             value, = unpack_le_uint64(atomicals_entry['data'][HASHX_LEN + SCRIPTHASH_LEN : HASHX_LEN + SCRIPTHASH_LEN + 8])
+            script_hash= atomicals_entry['data'][HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]
+            self.logger.info(f'script_hash={script_hash.hex()}');
             atomical_mint_info = self.get_atomicals_id_mint_info(atomical_id)
             if not atomical_mint_info:
                 raise IndexError(f'build_atomical_id_info_map {atomical_id.hex()} not found in mint info. IndexError.')
@@ -1695,10 +1699,12 @@ class BlockProcessor:
                     'atomical_id': atomical_id,
                     'type': atomical_mint_info['type'],
                     'value': 0,
-                    'input_indexes': []
+                    'input_indexes': [],
+                    'script_hash':script_hash,
                 }
             map_atomical_ids_to_info[atomical_id]['value'] += value
             map_atomical_ids_to_info[atomical_id]['input_indexes'].append(txin_index)
+        #     这个函数就构建好了这个vin的信息,这笔tx 对应的vin信息, 但是还缺一个scripthash
         return map_atomical_ids_to_info
 
     # Maps all the inputs that contain NFTs
@@ -2735,7 +2741,9 @@ class BlockProcessor:
                     # Find all the existing transferred atomicals and spend the Atomicals utxos
                     atomicals_transferred_list = spend_atomicals_utxo(txin.prev_hash, txin.prev_idx, True)
                     if len(atomicals_transferred_list):
-                        atomicals_spent_at_inputs[txin_index] = atomicals_transferred_list
+                        # Key:  b'i' + location(tx_hash + txout_idx) + atomical_id(mint_tx_hash + mint_txout_idx)
+                        # Value: hashX + scripthash + value
+                        atomicals_spent_at_inputs[txin_index] = atomicals_transferred_list # 这个就是utxo要消费的prev 数据信息,这里能拿到 scripthash(发送方)+当时的mint数量value
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
                             self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
