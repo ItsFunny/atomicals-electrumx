@@ -282,6 +282,8 @@ class BlockProcessor:
         self.atomicals_id_cache = pylru.lrucache(1000000)
         self.atomicals_rpc_format_cache = pylru.lrucache(100000)
 
+        self.ft_trace_cache={} # ft的缓存信息
+
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
         # cancellations from shutdown don't lose work - when the task
@@ -2753,6 +2755,7 @@ class BlockProcessor:
                 # Get the hashX
                 hashX = self.coin.hashX_from_script(txout.pk_script)
                 append_hashX(hashX)
+                self.logger.info(f'hashX={hash_to_hex_str(hashX)},value:{txout.value}');
                 put_utxo(tx_hash + to_le_uint32(idx), hashX + tx_numb + to_le_uint64(txout.value))
 
             # Only create Atomicals if the activation height is reached

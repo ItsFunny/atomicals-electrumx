@@ -54,7 +54,7 @@ class UTXO:
 
 class FlushData:
     height = attr.ib()
-    tx_count = attr.ib() 
+    tx_count = attr.ib()
     headers = attr.ib()
     block_tx_hashes = attr.ib()
     # The following are flushed to the UTXO DB if undo_infos is not None
@@ -62,7 +62,7 @@ class FlushData:
     adds = attr.ib()  # type: Dict[bytes, bytes]  # txid+out_idx -> hashX+tx_num+value_sats
     deletes = attr.ib()  # type: List[bytes]  # b'h' db keys, and b'u' db keys, and Atomicals and related keys
     tip = attr.ib()
-    
+
     # Atomicals specific cache flush data below:
     # ------------------------------------------
     # atomical_count of Atomicals operates exactly similarly to tx_count
@@ -72,7 +72,7 @@ class FlushData:
     # atomicals_adds is used to track atomicals locations and unspent utxos with the b'i' and b'a' indexes
     # It uses a field 'deleted' to indicate whether to write the b'a' (active unspent utxo) or not - because it may have been spent before the cache flushed
     # Maps location_id to atomical_ids and the value/deleted entry
-    atomicals_adds = attr.ib()          # type: Dict[bytes, Dict[bytes, { value: bytes, deleted: Boolean}] ] 
+    atomicals_adds = attr.ib()          # type: Dict[bytes, Dict[bytes, { value: bytes, deleted: Boolean}] ]
     # general_adds is a general purpose storage for key-value, used for the majority of atomicals data
     general_adds = attr.ib()            # type: List[Tuple[Sequence[bytes], Sequence[bytes]]]
     # realm_adds map realm names to tx_num ints, which then map onto an atomical_id
@@ -93,12 +93,12 @@ class FlushData:
     # dmpay_adds maps atomical_id to tx_num ints, which then map onto payment_outpoints
     dmpay_adds = attr.ib()           # type: Dict[bytes, Dict[int, bytes]
     # distmint_adds tracks the b'gi' which is the initial distributed mint location tracked to determine if any more mints are allowed
-    # It maps atomical_id (of the dft deploy token mint) to location_ids and then the details of the scripthash+value_sats of the mint        
+    # It maps atomical_id (of the dft deploy token mint) to location_ids and then the details of the scripthash+value_sats of the mint
     distmint_adds = attr.ib()           # type: Dict[bytes, Dict[bytes, bytes]
     # state_adds is for evt, mod state updates
-    # It maps atomical_id to the data of the state update      
+    # It maps atomical_id to the data of the state update
     state_adds = attr.ib()           # type: Dict[bytes, Dict[bytes, bytes]
-    
+
 COMP_TXID_LEN = 4
 
 class DB:
@@ -198,7 +198,7 @@ class DB:
         # Value: atomical_id bytes
         # "maps parent realm atomical id and sub-name and commit tx number to the atomical_id"
         # ---
-        # Key: b'spay' + atomical_id (of potential subrealm in the value of the b'srlm' index) + payment_tx_outpoint 
+        # Key: b'spay' + atomical_id (of potential subrealm in the value of the b'srlm' index) + payment_tx_outpoint
         # Value: satoshi value of the payment
         # "maps atomical id and payment outpoint to the satoshi value. Used with b'srlm' to associate payments"
         # ---
@@ -207,7 +207,7 @@ class DB:
         # "maps name to atomical id (FT)"
         # ---
         # Key: b'gi' + atomical_id + location_id
-        # Value: satoshis at the output 
+        # Value: satoshis at the output
         # "maps generated atomical mint and location to a value"
         # ---
         # Key: b'dat' + location_id
@@ -224,18 +224,18 @@ class DB:
         #
         #
         #
-        # --- Proof of work based indexes below --- 
+        # --- Proof of work based indexes below ---
         # The following indexes are for proof of work ranking and content scanning, they are non-functional to operations of atomicals
         #
         #
         # Key: b'powcmb' + pack_le_uint32(height) + pow_len_commit + pack_le_uint16(mint_bitworkc|rx) + atomical_id + op_padded
         # Value: paylaod_bytes of the operation found
         # "maps block height to the pow commit length score to the atomical id and the operation data"
-        # --- 
+        # ---
         # Key: b'powcmr' + pow_commit_padded + pack_le_uint32(height) + atomical_id + op_padded
         # Value: paylaod_bytes of the operation found
         # "maps pow commit prefix to height and atomical id"
-        # --- 
+        # ---
         # Key:  b'powcob' + pack_le_uint32(height) + pow_len_commit + pack_le_uint16(mint_bitworkc|rx) + commit_location + op_padded
         # Value: paylaod_bytes of the operation found
         # "maps pow commit for other non atomicals operation by height to pow score and commit location data"
@@ -300,7 +300,7 @@ class DB:
             assert self.db_tx_count == self.tx_counts[-1]
         else:
             assert self.db_tx_count == 0
-    
+
     async def _read_atomical_counts(self):
         if self.atomical_counts is not None:
             return
@@ -598,10 +598,12 @@ class DB:
             tx_num = value[HASHX_LEN: HASHX_LEN+TXNUM_LEN]
             value_sats = value[-8:]
             suffix = txout_idx + tx_num
+            valuee=unpack_le_uint64(value_sats)
+            print("UTXO: ", hash_to_hex_str(hashX), txout_idx, tx_num, value_sats, valuee);
             batch_put(b'h' + key[:COMP_TXID_LEN] + suffix, hashX)
             batch_put(b'u' + hashX + suffix, value_sats)
         flush_data.adds.clear()
-        
+
         # New atomicals location UTXOs
         # Tracks the atomicals that passed through each location and maintains active unspent utxos
         batch_put = batch.put
@@ -611,13 +613,13 @@ class DB:
                 hashX = value[:HASHX_LEN]
                 scripthash = value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]
                 value_sats = value[HASHX_LEN + SCRIPTHASH_LEN : HASHX_LEN + SCRIPTHASH_LEN + 8]
-                tx_numb = value[-TXNUM_LEN:]  
-                batch_put(b'i' + location_key + atomical_id, hashX + scripthash + value_sats + tx_numb) 
+                tx_numb = value[-TXNUM_LEN:]
+                batch_put(b'i' + location_key + atomical_id, hashX + scripthash + value_sats + tx_numb)
                 # Add the active b'a' atomicals location if it was not deleted
                 if not value_with_tombstone.get('deleted', False):
-                    batch_put(b'a' + atomical_id + location_key, hashX + scripthash + value_sats + tx_numb) 
+                    batch_put(b'a' + atomical_id + location_key, hashX + scripthash + value_sats + tx_numb)
         flush_data.atomicals_adds.clear()
- 
+
         # Distributed mint data adds
         # Grouped by the atomical and locations. Maintains the global location of all initial mints of distributed ft tokens
         batch_put = batch.put
@@ -628,7 +630,7 @@ class DB:
         flush_data.distmint_adds.clear()
 
         # State data adds
-        # Grouped by prefix and atomical id 
+        # Grouped by prefix and atomical id
         batch_put = batch.put
         for state_id_prefix_key, state_id_suffix_map in flush_data.state_adds.items():
             for state_id_suffix_key, value in state_id_suffix_map.items():
@@ -686,7 +688,7 @@ class DB:
             self.flush_utxo_db(batch, flush_data)
             # Flush state last as it reads the wall time.
             self.flush_state(batch)
-            
+
         elapsed = self.last_flush - start_time
         self.logger.info(f'backup flush #{self.history.flush_count:,d} took '
                          f'{elapsed:.1f}s.  Height {flush_data.height:,d} '
@@ -969,7 +971,7 @@ class DB:
             self.db_height = state['height']
             self.db_tx_count = state['tx_count']
             self.db_atomical_count = state['atomical_count']
-           
+
             self.db_tip = state['tip']
             self.utxo_flush_count = state['utxo_flush_count']
             self.wall_time = state['wall_time']
@@ -1131,7 +1133,7 @@ class DB:
             self.logger.warning(f'all_utxos: tx hash not '
                                 f'found (reorg?), retrying...')
             await sleep(0.25)
- 
+
     async def lookup_utxos(self, prevouts):
         '''For each prevout, lookup it up in the DB and return a (hashX,
         value) pair or None if not found.
@@ -1189,7 +1191,7 @@ class DB:
     # Get the raw mint information for an atomical
     def get_atomical_mint_info_dump(self, atomical_id):
         return self.utxo_db.get(b'mi' + atomical_id)
-    
+
     # Resolve the atomical id for a given atomical number
     def get_atomical_id_by_atomical_number(self, atomical_number):
         atomical_num_key = b'n' + pack_be_uint64(int(atomical_number))
@@ -1198,7 +1200,7 @@ class DB:
             self.logger.error(f'get_atomical_id_by_atomical_number {atomical_number} atomical number not found')
             return None
         return atomical_id_value
-    
+
     def get_tx_num_height_from_tx_hash(self, tx_hash):
         tx_hash_key = b'tx' + tx_hash
         tx_hash_value = self.utxo_db.get(tx_hash_key)
@@ -1224,8 +1226,8 @@ class DB:
         if len(payments) > 0:
             self.logger.info(f'get_earliest_subrealm_payment {location_id_bytes_to_compact(atomical_id)}  {payments}')
             return payments[0]
-        return None 
-    
+        return None
+
     def get_earliest_dmitem_payment(self, atomical_id):
         dmpay_key_atomical_id = b'dmpay' + atomical_id
         payments = []
@@ -1242,7 +1244,7 @@ class DB:
         if len(payments) > 0:
             self.logger.info(f'get_earliest_dmitem_payment {location_id_bytes_to_compact(atomical_id)} {payments}')
             return payments[0]
-        return None 
+        return None
 
     # Get general data by key
     def get_general_data(self, key):
@@ -1250,7 +1252,7 @@ class DB:
 
     # Get all of the atomicals that passed through the location
     # Never deleted, kept for historical purposes.
-    def get_atomicals_by_location(self, location): 
+    def get_atomicals_by_location(self, location):
         long_form_ids = self.get_atomicals_by_location_long_form(location)
         atomicals_at_location = []
         for long_form_id in long_form_ids:
@@ -1259,7 +1261,7 @@ class DB:
 
     # Get all of the atomicals that passed through the location
     # Never deleted, kept for historical purposes.
-    def get_atomicals_by_location_long_form(self, location): 
+    def get_atomicals_by_location_long_form(self, location):
         # Get any other atomicals at the same location
         atomicals_at_location = []
         atomicals_at_location_prefix = b'i' + location
@@ -1268,12 +1270,12 @@ class DB:
         return atomicals_at_location
 
     # Gets the full information about the location_info
-    def get_atomicals_by_location_extended_info_long_form(self, location): 
+    def get_atomicals_by_location_extended_info_long_form(self, location):
         # Get any other atomicals at the same location
         atomicals_at_location = []
         atomicals_at_location_prefix = b'i' + location
         tx_hash, index = get_tx_hash_index_from_location_id(location)
-        last_scripthash = None 
+        last_scripthash = None
         last_value = None
         # Get the location information, do a sanity check to ensure all the locations are the same
         for location_key, location_result_value in self.utxo_db.iterator(prefix=atomicals_at_location_prefix):
@@ -1312,7 +1314,7 @@ class DB:
             'atomicals': atomicals_at_location
         }
     # Get the atomicals at a specific utxo
-    # Longform_ids indicates whether to use the long form atomical ids (36 bytes). By default returns the compact form with the 'i' 
+    # Longform_ids indicates whether to use the long form atomical ids (36 bytes). By default returns the compact form with the 'i'
     def get_atomicals_by_utxo(self, utxo, Longform_ids=False):
         location = utxo.tx_hash + pack_le_uint32(utxo.tx_pos)
         if Longform_ids:
@@ -1340,13 +1342,13 @@ class DB:
                 #location_script = atomical_output_script_value
                 #location_tx_hash = location[ : 32]
                 #atomical_location_idx, = unpack_le_uint32(location[ 32 : 36])
-                #location_scripthash = atomical_active_location_value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]  
+                #location_scripthash = atomical_active_location_value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]
                 location_value, = unpack_le_uint64(atomical_active_location_value[HASHX_LEN + SCRIPTHASH_LEN : HASHX_LEN + SCRIPTHASH_LEN + 8])
                 active_supply += location_value
-                # tx_numb = atomical_active_location_value[-TXNUM_LEN:]  
+                # tx_numb = atomical_active_location_value[-TXNUM_LEN:]
                 # txnum_padding = bytes(8-TXNUM_LEN)
                 #tx_num_padded, = unpack_le_uint64(tx_numb + txnum_padding)
-        return active_supply   
+        return active_supply
 
     # Get the atomical details with location information added
     # In the case of NFTs, there will only be every 1 maximum active location
@@ -1367,9 +1369,9 @@ class DB:
                     location_script = atomical_output_script_value
                     location_tx_hash = location[ : 32]
                     atomical_location_idx, = unpack_le_uint32(location[ 32 : 36])
-                    location_scripthash = atomical_active_location_value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]  
+                    location_scripthash = atomical_active_location_value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]
                     location_value, = unpack_le_uint64(atomical_active_location_value[HASHX_LEN + SCRIPTHASH_LEN : HASHX_LEN + SCRIPTHASH_LEN + 8])
-                    tx_numb = atomical_active_location_value[-TXNUM_LEN:]  
+                    tx_numb = atomical_active_location_value[-TXNUM_LEN:]
                     txnum_padding = bytes(8-TXNUM_LEN)
                     tx_num_padded, = unpack_le_uint64(tx_numb + txnum_padding)
                     atomicals_at_location = self.get_atomicals_by_location(location)
@@ -1384,12 +1386,12 @@ class DB:
                             'atomicals_at_location': atomicals_at_location,
                             'tx_num': tx_num_padded
                         })
-                counter += 1 
+                counter += 1
 
             # Sort by most recent transactions first
             locations.sort(key=lambda x: x['tx_num'], reverse=True)
             atomical['location_info_obj'] = {
-                'locations': locations 
+                'locations': locations
             }
             atomical['location_info'] = locations
             atomical['location_counts'] = counter
@@ -1402,14 +1404,14 @@ class DB:
         # Print sorted highscores print to file
         arr = []
         arrlocs = []
-       
+
         file = open('/home/ubuntu/dbdump/i_prefix.txt', 'w') #write to file
         for location_key, location_result_value in self.utxo_db.iterator(prefix=i_prefix):
             arr.append(location_key.hex() + '-' + location_result_value.hex())
             arrlocs.append(location_key)
         for item in arr:
             file.write(item + '\n')
-            
+
         file.close() #close file
 
         filelocs = open('/home/ubuntu/dbdump/i_prefix_locs.txt', 'w') #write to file
@@ -1457,40 +1459,40 @@ class DB:
         # realms
         arr = []
         arrlocs = []
-        realmsfile = open('/home/ubuntu/dbdump/rlm_prefix.txt', 'w') 
+        realmsfile = open('/home/ubuntu/dbdump/rlm_prefix.txt', 'w')
         rlm_prefix = b'rlm'
         for the_key, the_value in self.utxo_db.iterator(prefix=rlm_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             realmsfile.write(item + '\n')
-        realmsfile.close() 
+        realmsfile.close()
 
         # subrealms
         arr = []
         arrlocs = []
-        subrealmsfile = open('/home/ubuntu/dbdump/srlm_prefix.txt', 'w') 
+        subrealmsfile = open('/home/ubuntu/dbdump/srlm_prefix.txt', 'w')
         srlm_prefix = b'srlm'
         for the_key, the_value in self.utxo_db.iterator(prefix=srlm_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             subrealmsfile.write(item + '\n')
-        subrealmsfile.close() 
+        subrealmsfile.close()
 
         # payments
         arr = []
         arrlocs = []
-        spayfile = open('/home/ubuntu/dbdump/spay_prefix.txt', 'w') 
+        spayfile = open('/home/ubuntu/dbdump/spay_prefix.txt', 'w')
         spay_prefix = b'spay'
         for the_key, the_value in self.utxo_db.iterator(prefix=spay_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             spayfile.write(item + '\n')
-        spayfile.close() 
+        spayfile.close()
 
         # mod
         arr = []
         arrlocs = []
-        modfile = open('/home/ubuntu/dbdump/mod_prefix.txt', 'w') 
+        modfile = open('/home/ubuntu/dbdump/mod_prefix.txt', 'w')
         mod_prefix = b'mod'
         modobjs = []
         for the_key, the_value in self.utxo_db.iterator(prefix=mod_prefix):
@@ -1500,69 +1502,69 @@ class DB:
             modfile.write(item + '\n')
         for modobj in modobjs:
             modfile.write(f'{loads(modobj)}\n')
-        
-        modfile.close() 
+
+        modfile.close()
 
         # tick
         arr = []
         arrlocs = []
-        tickfile = open('/home/ubuntu/dbdump/tick_prefix.txt', 'w') 
+        tickfile = open('/home/ubuntu/dbdump/tick_prefix.txt', 'w')
         tick_prefix = b'tick'
         for the_key, the_value in self.utxo_db.iterator(prefix=tick_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             tickfile.write(item + '\n')
-        tickfile.close() 
+        tickfile.close()
 
         arr = []
         arrlocs = []
-        mintfile = open('/home/ubuntu/dbdump/mddata.txt', 'w') 
+        mintfile = open('/home/ubuntu/dbdump/mddata.txt', 'w')
         mint_prefix = b'md'
         for the_key, the_value in self.utxo_db.iterator(prefix=mint_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             mintfile.write(item + '\n')
-        mintfile.close() 
+        mintfile.close()
 
         arr = []
         arrlocs = []
-        mintinfofile = open('/home/ubuntu/dbdump/midata.txt', 'w') 
+        mintinfofile = open('/home/ubuntu/dbdump/midata.txt', 'w')
         mintinfo_prefix = b'mi'
         for the_key, the_value in self.utxo_db.iterator(prefix=mintinfo_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             mintinfofile.write(item + '\n')
-        mintinfofile.close() 
+        mintinfofile.close()
 
         arr = []
         arrlocs = []
-        sealedfile = open('/home/ubuntu/dbdump/sealed.txt', 'w') 
+        sealedfile = open('/home/ubuntu/dbdump/sealed.txt', 'w')
         sealed_prefix = b'sealed'
         for the_key, the_value in self.utxo_db.iterator(prefix=sealed_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             sealedfile.write(item + '\n')
-        sealedfile.close() 
+        sealedfile.close()
 
         arr = []
         arrlocs = []
-        nfile = open('/home/ubuntu/dbdump/n.txt', 'w') 
+        nfile = open('/home/ubuntu/dbdump/n.txt', 'w')
         n_prefix = b'n'
         for the_key, the_value in self.utxo_db.iterator(prefix=n_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             nfile.write(item + '\n')
-        nfile.close() 
+        nfile.close()
 
         arr = []
         arrlocs = []
-        lundofile = open('/home/ubuntu/dbdump/Lundo.txt', 'w') 
+        lundofile = open('/home/ubuntu/dbdump/Lundo.txt', 'w')
         L_prefix = b'L'
         for the_key, the_value in self.utxo_db.iterator(prefix=L_prefix):
             arr.append(the_key.hex() + '-' + the_value.hex())
         for item in arr:
             lundofile.write(item + '\n')
-        lundofile.close() 
+        lundofile.close()
 
 
     def get_name_entries_template(self, db_prefix, subject_encoded):
@@ -1596,7 +1598,7 @@ class DB:
             name_len, = unpack_le_uint16_from(db_key[-10:-8])
             dmitem_name = db_key[len(db_prefix)]
             if entries_deduped.get(dmitem_name):
-                continue 
+                continue
             dmitem_name_str = db_key[db_prefix_len_with_parent : db_prefix_len_with_parent + name_len].decode()
             entries_deduped[dmitem_name_str] = {
                 'dmitem_name': dmitem_name_str,
@@ -1636,13 +1638,13 @@ class DB:
         start_count = 0
         reverse_bool = False
         if Reverse:
-            reverse_bool = True 
+            reverse_bool = True
         else:
             reverse_bool = False
         for db_key, db_value in self.utxo_db.iterator(prefix=db_key_prefix, reverse=reverse_bool):
-            if start_count < Offset: 
+            if start_count < Offset:
                 start_count += 1
-                continue 
+                continue
             tx_numb = db_key[-8:]
             atomical_id = db_value
             tx_num, = unpack_le_uint64(tx_numb)
@@ -1658,7 +1660,7 @@ class DB:
             if limit_count == Limit:
                 break
         return entries
- 
+
     # Populate the latest state of an atomical for a path
     def populate_extended_mod_state_latest_atomical_info(self, atomical_id, atomical, height):
         mod_history = self.get_mod_history(atomical_id, height)
@@ -1668,7 +1670,7 @@ class DB:
             'latest': latest_state_auto_encoded
         }
         return atomical
- 
+
     # Populate the mod state history for an atomical
     def get_mod_history(self, atomical_id, max_height):
         return self.get_mod_or_event_history(atomical_id, max_height, b'mod')
@@ -1692,9 +1694,9 @@ class DB:
             out_idx_packed = db_key[ PREFIX_BYTE_LEN + ATOMICAL_ID_LEN + TXNUM_LEN + TX_HASH_LEN: PREFIX_BYTE_LEN + ATOMICAL_ID_LEN + TXNUM_LEN + TX_HASH_LEN + 4]
             out_idx, = unpack_le_uint32(out_idx_packed)
             entry = {
-                'tx_num': tx_num, 
-                'height': tx_height, 
-                'txid': hash_to_hex_str(tx_hash), 
+                'tx_num': tx_num,
+                'height': tx_height,
+                'txid': hash_to_hex_str(tx_hash),
                 'index': out_idx,
                 'data': loads(db_value)
             }
@@ -1702,7 +1704,7 @@ class DB:
         # Sort by descending tx_num
         history.sort(key=lambda x: x['tx_num'], reverse=True)
         return history
- 
+
     # Populate the mod(ify) state information for an Atomical.
     # There could be potentially many updates for an Atomical and this should be called to enumerate the entire state history
     # From the state history, clients can reconstruct the "latest state" of an Atomical dynamic data fields
@@ -1722,7 +1724,7 @@ class DB:
             'history': self.get_evt_history(atomical_id, max_height)
         }
         return atomical
-    
+
     # Retrieve the list feed of Atomicals in order
     # Can be used to construct a "latest Atomicals mints" page and a feed of the global activity
     async def get_atomicals_list(self, limit, offset, asc = False):
@@ -1730,7 +1732,7 @@ class DB:
             limit = 50
         # Todo: update the logic to correctly list
         atomical_number_tip = self.db_atomical_count
-        def read_atomical_list():   
+        def read_atomical_list():
             atomical_ids = []
             # If no offset provided, then assume we want to start from the highest one
             search_starting_at_atomical_number = atomical_number_tip
@@ -1740,7 +1742,7 @@ class DB:
                 # if offset is negative, then we assume it is subtracted from the latest number
                 search_starting_at_atomical_number = atomical_number_tip + offset # adding a minus
 
-            # safety checking for less than 0   
+            # safety checking for less than 0
             if search_starting_at_atomical_number < 0:
                 search_starting_at_atomical_number = 0
 
@@ -1754,7 +1756,7 @@ class DB:
                 else:
                     # Do not go to 0 or below
                     if search_starting_at_atomical_number - x < 0:
-                        break 
+                        break
                     current_key = b'n' + pack_be_uint64(search_starting_at_atomical_number - x)
                     list_of_keys.append(current_key)
                 x += 1
@@ -1764,10 +1766,9 @@ class DB:
                 atomical_id_value = self.utxo_db.get(search_key)
                 if atomical_id_value:
                     atomical_ids.append(atomical_id_value)
-                else: 
+                else:
                     # Once we do not find one, then we are done because there should be no more
                     break
             return atomical_ids
         return await run_in_thread(read_atomical_list)
- 
-    
+
