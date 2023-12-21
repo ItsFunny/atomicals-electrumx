@@ -308,7 +308,6 @@ class BlockProcessor:
         '''
         if not raw_blocks:
             return
-        get_block_traces(self.db,325)
         first = self.height + 1
         blocks = [self.coin.block(raw_block, first + n)
                   for n, raw_block in enumerate(raw_blocks)]
