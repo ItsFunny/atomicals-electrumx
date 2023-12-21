@@ -2,7 +2,7 @@ import struct
 
 import electrumx.lib.util
 from cbor2 import dumps, loads, CBORDecodeError
-
+from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str
 
 
@@ -105,7 +105,7 @@ def add_ft_transfer_out_trace(ft_transfer_trace_out_cache,tx_hash, output_index,
 def merge_trace(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache,general_data_cache, height):
     ret = []
     ret.extend(transfer_merge(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache))
-    trace_key = b'okx' + electrumx.pack_le_uint64(height)
+    trace_key = b'okx' + pack_le_uint64(height)
     put_general_data = general_data_cache.__setitem__
 
     for point in ret:
