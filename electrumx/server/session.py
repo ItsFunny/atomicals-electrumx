@@ -72,7 +72,7 @@ def scripthash_to_hashX(scripthash):
         bin_hash = hex_str_to_hash(scripthash)
         if len(bin_hash) == 32:
             v=bin_hash[:HASHX_LEN]
-            print("scripthash:",scripthash,"hashX:",v);
+            print("scripthash:",scripthash,"hash_to_hex_str:",hash_to_hex_str(bin_hash),"hashX:",hash_to_hex_str(v))
             return v
     except (ValueError, TypeError):
         pass
@@ -1382,7 +1382,11 @@ class ElectrumX(SessionBase):
 
     async def atomicals_listscripthash(self, scripthash, Verbose=False):
         '''Return the list of Atomical UTXOs for an address'''
+        v=hex_str_to_hash(scripthash)
+        vv=sha256(v)
+        vvv=double_sha256(v)
         hashX = scripthash_to_hashX(scripthash)
+        print(f'atomicals_listscripthash,scripthash:{scripthash},hashx:{hash_to_hex_str(hashX)},vv={hash_to_hex_str(vv)},vvv={hash_to_hex_str(vvv)}')
         return await self.hashX_listscripthash_atomicals(hashX, Verbose)
 
     async def atomicals_list(self, offset, limit, asc):

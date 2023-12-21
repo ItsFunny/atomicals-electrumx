@@ -614,6 +614,7 @@ class DB:
                 scripthash = value[HASHX_LEN : HASHX_LEN + SCRIPTHASH_LEN]
                 value_sats = value[HASHX_LEN + SCRIPTHASH_LEN : HASHX_LEN + SCRIPTHASH_LEN + 8]
                 tx_numb = value[-TXNUM_LEN:]
+                print(f'atomical_id:{hash_to_hex_str(atomical_id)},接收方:{hash_to_hex_str(scripthash)},amount:{unpack_le_uint64(value_sats)}');
                 batch_put(b'i' + location_key + atomical_id, hashX + scripthash + value_sats + tx_numb)
                 # Add the active b'a' atomicals location if it was not deleted
                 if not value_with_tombstone.get('deleted', False):
