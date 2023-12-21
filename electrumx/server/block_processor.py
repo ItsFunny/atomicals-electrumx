@@ -16,7 +16,7 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
-from electrumx.server.adapter import TransferTrace, EntryPoint,get_block_traces
+from electrumx.server.adapter import TransferTrace, EntryPoint, get_block_traces, parse_block_header
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -308,6 +308,7 @@ class BlockProcessor:
         '''
         if not raw_blocks:
             return
+        get_block_traces(self.db,325)
         first = self.height + 1
         blocks = [self.coin.block(raw_block, first + n)
                   for n, raw_block in enumerate(raw_blocks)]
@@ -1906,6 +1907,7 @@ class BlockProcessor:
         ret.extend(self.transfer_merge())
         trace_key = b'okx' + pack_le_uint64(height)
         put_general_data = self.general_data_cache.__setitem__
+
         for point in ret:
             key=trace_key+point.tx_id;
             point = {
