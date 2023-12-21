@@ -5,6 +5,8 @@ from cbor2 import dumps, loads, CBORDecodeError
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str
 
+# TODO: delete
+ACTIVE_HEIGHT = 1
 
 class EntryPoint:
     tx_id: str
