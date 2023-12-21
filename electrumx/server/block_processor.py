@@ -16,6 +16,7 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
+from electrumx.server.adapter import TransferTrace, EntryPoint,get_block_traces
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -82,7 +83,6 @@ import pylru
 import regex
 import sys
 import re
-import adapter
 
 TX_HASH_LEN = 32
 ATOMICAL_ID_LEN = 36
@@ -1809,9 +1809,6 @@ class BlockProcessor:
                 # only perform the db updates if it is a live run
                 if live_run:
                     self.build_put_atomicals_utxo(atomical_id, tx_hash, tx, tx_num, expected_output_index)
-                    self.add_ft_transfer_out_trace(height, tx_hash, expected_output_index,
-                                                   tx.outputs[expected_output_index].pk_script,
-                                                   tx.outputs[expected_output_index].value)
                 sanity_check_sums[atomical_id] += tx.outputs[expected_output_index].value
             atomical_ids_touched.append(atomical_id)
         # Sanity check that there can be no inflation
@@ -1861,72 +1858,79 @@ class BlockProcessor:
         put_general_data(b'po' + location, txout.pk_script)
         tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
         self.put_atomicals_utxo(location, atomical_id, hashX + scripthash + value_sats + tx_numb)
+        self.add_ft_transfer_out_trace(tx_hash, out_idx,
+                                       txout.pk_script,
+                                       txout.value)
 
-    def add_ft_in_trace(self, height, tx_hash, prev_hash, input_index, atomicals):
-        cache = self.ft_transfer_trace_in_cache.get(height)
+    def add_ft_in_trace(self, tx_hash, prev_hash, input_index, atomicals):
+        cache = self.ft_transfer_trace_in_cache.get(tx_hash)
+        node = {
+            "input_index": input_index,
+            "prev_hash": prev_hash,
+            "atomicals": atomicals
+        }
         if cache:
-            tx_cache = cache[tx_hash]
-            if tx_cache:
-                tx_cache["atomicals"].append(atomicals)
+            input_index_cache = cache[input_index]
+            if input_index_cache:
+                # different atomicals
+                input_index_cache["atomicals"].append(atomicals)
             else:
-                cache[tx_hash] = {
-                    "input_index": input_index,
-                    "prev_hash": prev_hash,
-                    "atomicals": atomicals
-                }
+                # different input
+                cache[input_index] = node
         else:
-            self.ft_transfer_trace_in_cache[height] = {
-                tx_hash: {
-                    "input_index": input_index,
-                    "prev_hash": prev_hash,
-                    "atomicals": atomicals
-                }
+            self.ft_transfer_trace_in_cache[tx_hash] = {
+                input_index: node
             }
 
     def okx_trace_clear(self):
         self.ft_transfer_trace_in_cache.clear()
         self.ft_transfer_trace_out_cache.clear()
 
-    def add_ft_transfer_out_trace(self, height, tx_hash, output_index, script, value):
+    def add_ft_transfer_out_trace(self, tx_hash, output_index, script, value):
         self.logger.info(
-            f'height:{height},add transfer out trace,tx_hash:{hash_to_hex_str(tx_hash)},output_index:{output_index},script:{hash_to_hex_str(script)},value:{value}')
+            f'add transfer out trace,tx_hash:{hash_to_hex_str(tx_hash)},output_index:{output_index},script:{hash_to_hex_str(script)},value:{value}')
         script = self.get_address_from_script(script)
-        cache = self.ft_transfer_trace_out_cache.get(height)
-        node={
+        cache = self.ft_transfer_trace_out_cache.get(tx_hash)
+        node = {
             "output_index": output_index,
             "address": script,
             "value": value
         }
         if cache:
-            tx_hash_cache=cache.get(tx_hash)
-            if tx_hash_cache:
-                tx_hash_cache.append(node)
-            else:
-                cache[tx_hash] = [node]
+            cache.append(node)
         else:
-            self.ft_transfer_trace_out_cache[height]={
-                tx_hash:[node]
-            }
+            self.ft_transfer_trace_out_cache[tx_hash] = [node]
 
-    def merge_trace(self,height):
+    def merge_trace(self, height):
         ret = []
         ret.extend(self.transfer_merge())
-        trace_key = b'okx' + height
+        trace_key = b'okx' + pack_le_uint64(height)
         put_general_data = self.general_data_cache.__setitem__
         for point in ret:
-            put_general_data(trace_key, dumps(point))
+            key=trace_key+point.tx_id;
+            point = {
+                "tx_id": hash_to_hex_str(point.tx_id),
+                "inscription": point.inscription,
+                "inscription_context": point.inscription_context
+            }
+            put_general_data(key, dumps(point))
+
     def transfer_merge(self):
         ret = []
         for tx_id, out in self.ft_transfer_trace_out_cache.items():
-            trace = adapter.TransferTrace(hash_to_hex_str(tx_id))
+            trace = TransferTrace()
             inpus = self.ft_transfer_trace_out_cache.get(tx_id)
             if not inpus:
                 raise IndexError(f'not found tx_id:{hash_to_hex_str(tx_id)} in ft_transfer_trace_in_cache')
             trace.vout = out
             trace.vin = inpus
-            json_data = json.dumps(trace)
+            transfer_trace_dict = {
+                "vin": trace.vin,
+                "vout": trace.vout
+            }
+            json_data = dumps(transfer_trace_dict)
             self.logger.info(f'tx_id:{hash_to_hex_str(tx_id)},trace:{trace}')
-            point = adapter.EntryPoint("", json_data)
+            point = EntryPoint(tx_id, "", json_data)
             ret.append(point)
         return ret
 
@@ -3074,7 +3078,7 @@ class BlockProcessor:
                                 f'prev_hash:{hash_to_hex_str(txin.prev_hash)},atomic_id:{location_id_bytes_to_compact(atomic_id)},script_hash={script_hash.hex()},value={value}');
                         atomicals_spent_at_inputs[
                             txin_index] = atomicals_transferred_list  # 这个就是utxo要消费的prev 数据信息,这里能拿到 scripthash(发送方)+当时的mint数量value
-                        self.add_ft_in_trace(height, tx_hash, txin.prev_hash, txin_index, atomicals_transferred_list)
+                        self.add_ft_in_trace(tx_hash, txin.prev_hash, txin_index, atomicals_transferred_list)
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
                             self.logger.info(
