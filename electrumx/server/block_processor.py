@@ -15,6 +15,7 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
+from electrumx.server.adapter import add_ft_in_trace, okx_trace_clear, add_ft_transfer_out_trace, merge_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -281,6 +282,9 @@ class BlockProcessor:
 
         self.atomicals_id_cache = pylru.lrucache(1000000)
         self.atomicals_rpc_format_cache = pylru.lrucache(100000)
+
+        self.ft_transfer_trace_in_cache = {}
+        self.ft_transfer_trace_out_cache = {}
   
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
@@ -1723,6 +1727,9 @@ class BlockProcessor:
         put_general_data(b'po' + location, txout.pk_script)
         tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
         self.put_atomicals_utxo(location, atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
+        add_ft_transfer_out_trace(self.ft_transfer_trace_out_cache, tx_hash, out_idx,
+                                  txout.pk_script,
+                                  txout.value)
     
     # Build a map of atomical id to the type, value, and input indexes
     # This information is used below to assess which inputs are of which type and therefore which outputs to color
@@ -2721,6 +2728,7 @@ class BlockProcessor:
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_id_cache.clear()
+        okx_trace_clear(self.ft_transfer_trace_in_cache,self.ft_transfer_trace_out_cache)
         # Track the Atomicals hash for the block
         # First we concatenate the previous block height hash to chain them together
         # The purpose of this is to create a unique hash fingerprint to make it easy to determine if indexers (such as this one) or other implementations
@@ -2781,6 +2789,8 @@ class BlockProcessor:
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
                             self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
+                        add_ft_in_trace(self.ft_transfer_trace_in_cache, tx_hash, txin.prev_hash, txin_index,
+                                        atomicals_transferred_list)
                     # Get the undo format for the spent atomicals
                     reformatted_for_undo_entries = []
                     for atomicals_entry in atomicals_transferred_list:
@@ -2885,6 +2895,8 @@ class BlockProcessor:
         self.db.atomical_counts.append(atomical_num)
             
         if self.is_atomicals_activated(height):
+            merge_trace(self.ft_transfer_trace_in_cache, self.ft_transfer_trace_out_cache, self.general_data_cache,
+                        height)
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(concatenation_of_tx_hashes_with_valid_atomical_operation)
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
