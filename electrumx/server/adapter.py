@@ -26,22 +26,12 @@ class TransferTrace:
 
 # TODO: optimize?
 def get_block_traces(db, height):
-    prefix = b'okx' + electrumx.lib.util.pack_le_uint64(height)
+    key = b'okx' + electrumx.lib.util.pack_le_uint64(height)
 
     raw_data = db.read_raw_block(height)
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
-    txs = []
-    for db_key, db_value in db.utxo_db.iterator(prefix=prefix):
-        point = loads(db_value)
-        tx_id = point['tx_id']
-        inscription = point['inscription']
-        inscription_context = point['inscription_context']
-        txs.append({
-            "protocol_name": "arc20",
-            "inscription": inscription,
-            "inscription_context": inscription_context,
-            "btc_txid": tx_id
-        })
+    value= db.utxo_db.get(key)
+    txs=loads(value)
     data = {
         "block_height": height,
         "block_hash": root,
@@ -85,10 +75,6 @@ def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index,
             input_index: node
         }
 
-def okx_trace_clear(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache):
-    ft_transfer_trace_in_cache.clear()
-    ft_transfer_trace_out_cache.clear()
-
 def add_ft_transfer_out_trace(ft_transfer_trace_out_cache,tx_hash, output_index, script, value):
     print(
         f'add transfer out trace,tx_hash:{hash_to_hex_str(tx_hash)},output_index:{output_index},script:{hash_to_hex_str(script)},value:{value}')
@@ -104,20 +90,16 @@ def add_ft_transfer_out_trace(ft_transfer_trace_out_cache,tx_hash, output_index,
     else:
         ft_transfer_trace_out_cache[tx_hash] = [node]
 
-def merge_trace(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache,general_data_cache, height):
-    ret = []
-    ret.extend(transfer_merge(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache))
+def flush_trace(traces,general_data_cache, height):
     trace_key = b'okx' + pack_le_uint64(height)
     put_general_data = general_data_cache.__setitem__
+    data=dumps(traces)
+    put_general_data(trace_key, data)
 
-    for point in ret:
-        key=trace_key+point.tx_id
-        point = {
-            "tx_id": hash_to_hex_str(point.tx_id),
-            "inscription": point.inscription,
-            "inscription_context": point.inscription_context
-        }
-        put_general_data(key, dumps(point))
+def merge_and_clean_trace(traces,ft_transfer_trace_in_cache,ft_transfer_trace_out_cache):
+    traces.extend(transfer_merge(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache))
+    ft_transfer_trace_in_cache.clear()
+    ft_transfer_trace_out_cache.clear()
 
 def transfer_merge(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache):
     ret = []
@@ -134,7 +116,12 @@ def transfer_merge(ft_transfer_trace_in_cache,ft_transfer_trace_out_cache):
         }
         json_data = dumps(transfer_trace_dict)
         print(f'tx_id:{hash_to_hex_str(tx_id)},trace:{trace}')
-        point = EntryPoint(tx_id, "", json_data)
+        point = {
+            "protocol_name": "arc20",
+            "btc_txid": hash_to_hex_str(tx_id),
+            "inscription": "",
+            "inscription_context": json_data
+        }
         ret.append(point)
     return ret
 
