@@ -16,7 +16,7 @@ from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
 from electrumx.server.adapter import add_ft_in_trace,  add_ft_transfer_out_trace, merge_and_clean_trace, \
-    ACTIVE_HEIGHT, flush_trace
+    ACTIVE_HEIGHT, flush_trace,add_dft_trace,add_ft_trace,add_dmt_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -286,7 +286,7 @@ class BlockProcessor:
 
         self.ft_transfer_trace_in_cache = {}
         self.ft_transfer_trace_out_cache = {}
-        self.trace_cache=[]
+        self.trace_cache = []
   
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
@@ -1406,6 +1406,7 @@ class BlockProcessor:
                     return None
 
         elif valid_create_op_type == 'FT':
+            isDecentralized = False
             # Add $max_supply informative property
             if mint_info['subtype'] == 'decentralized':
                 mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints'] 
@@ -1417,6 +1418,10 @@ class BlockProcessor:
                 if not self.validate_and_create_ft_mint_utxo(mint_info, tx_hash):
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
+            if isDecentralized:
+                add_dft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, True)
+            else:
+                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'])
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
@@ -2684,6 +2689,7 @@ class BlockProcessor:
                     tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
                     self.put_atomicals_utxo(location, potential_dmt_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(potential_dmt_atomical_id, location, scripthash + value_sats)
+                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash, True)
                     return potential_dmt_atomical_id
                 self.logger.info(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
             else: 
