@@ -28,7 +28,10 @@ class TransferTrace:
 def get_block_traces(db, height,page,limit):
     key = b'okx' + electrumx.lib.util.pack_le_uint64(height)
 
-    raw_data = db.read_raw_block(height)
+    try:
+        raw_data = db.read_raw_block(height)
+    except FileNotFoundError:
+        return None
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
     value= db.utxo_db.get(key)
     if value:
