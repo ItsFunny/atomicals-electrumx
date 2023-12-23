@@ -72,6 +72,8 @@ from electrumx.lib.util_atomicals import (
 
 import copy
 
+from electrumx.server.http_helper import start_http
+
 if TYPE_CHECKING:
     from electrumx.lib.coins import Coin
     from electrumx.server.env import Env
@@ -3567,6 +3569,7 @@ class BlockProcessor:
         '''
         self._caught_up_event = caught_up_event
         await self._first_open_dbs()
+        start_http(self.db)
         try:
             async with OldTaskGroup() as group:
                 await group.spawn(self.prefetcher.main_loop(self.height))
