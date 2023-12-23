@@ -26,21 +26,34 @@ class TransferTrace:
 
 
 # TODO: optimize?
-def get_block_traces(db, height):
+def get_block_traces(db, height, page, limit):
     key = b'okx' + electrumx.lib.util.pack_le_uint64(height)
 
-    raw_data = db.read_raw_block(height)
+    try:
+        raw_data = db.read_raw_block(height)
+    except FileNotFoundError:
+        return None
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
-    txs = loads(value)
-    data = {
-        "block_height": height,
-        "block_hash": root,
-        "prev_block_hash": prev_block_hash,
-        "block_time": ts,
-        "txs": txs
-    }
-    return data
+    if value:
+        txs = loads(value)
+        len = txs.__len__()
+        start = (page - 1) * limit
+        end = page * limit
+        if end > len:
+            end = len
+        txs = txs[start:end]
+        data = {
+            "page": page,
+            "block_height": height,
+            "sum": len,
+            "block_hash": root,
+            "prev_block_hash": prev_block_hash,
+            "block_time": ts,
+            "txs": txs,
+        }
+        return data
+    return None
 
 
 def parse_block_header(raw_block_data):
