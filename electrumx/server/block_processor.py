@@ -15,6 +15,8 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
+from electrumx.server.adapter import add_ft_in_trace,  add_ft_transfer_out_trace, merge_and_clean_trace, \
+    ACTIVE_HEIGHT, flush_trace,add_dft_trace,add_ft_trace,add_dmt_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -69,6 +71,8 @@ from electrumx.lib.util_atomicals import (
 )
 
 import copy
+
+from electrumx.server.http_helper import start_http
 
 if TYPE_CHECKING:
     from electrumx.lib.coins import Coin
@@ -282,6 +286,11 @@ class BlockProcessor:
         self.atomicals_id_cache = pylru.lrucache(1000000)
         self.atomicals_rpc_format_cache = pylru.lrucache(100000)
         self.atomicals_rpc_general_cache = pylru.lrucache(100000)
+
+
+        self.ft_transfer_trace_in_cache = {}
+        self.ft_transfer_trace_out_cache = {}
+        self.trace_cache = []
   
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
@@ -1314,7 +1323,7 @@ class BlockProcessor:
         if not commit_tx_num:
             self.logger.info(f'create_or_delete_atomical: commit_txid not found for reveal_tx {hash_to_hex_str(commit_txid)}. Skipping...')
             return None
-        if commit_tx_height < self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+        if commit_tx_height < ACTIVE_HEIGHT:
             self.logger.info(f'create_or_delete_atomical: commit_tx_height={commit_tx_height} is less than ATOMICALS_ACTIVATION_HEIGHT. Skipping...')
             return None
 
@@ -1395,7 +1404,7 @@ class BlockProcessor:
             if not self.create_or_delete_subrealm_entry_if_requested(mint_info, atomicals_spent_at_inputs, height, Delete):
                 return None
 
-            if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
+            if height >= ACTIVE_HEIGHT:
                 if not self.create_or_delete_dmitem_entry_if_requested(mint_info, operations_found_at_inputs['payload'], height, Delete):
                     return None
 
@@ -1405,6 +1414,7 @@ class BlockProcessor:
                     return None
 
         elif valid_create_op_type == 'FT':
+            isDecentralized = False
             # Add $max_supply informative property
             if mint_info['subtype'] == 'decentralized':
                 mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints'] 
@@ -1416,6 +1426,10 @@ class BlockProcessor:
                 if not self.validate_and_create_ft_mint_utxo(mint_info, tx_hash):
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
+            if isDecentralized:
+                add_dft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, True)
+            else:
+                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'])
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
@@ -1561,7 +1575,7 @@ class BlockProcessor:
         put_general_data = self.general_data_cache.__setitem__
         # Use a simplified mapping of NFTs using FIFO to the outputs 
         output_colored_map = {}
-        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
+        if height >= ACTIVE_HEIGHT:
             nft_map = self.build_nft_input_idx_to_atomical_map(atomicals_spent_at_inputs)
             next_output_idx = 0
             map_output_idxs_for_atomicals = {}
@@ -1728,6 +1742,9 @@ class BlockProcessor:
         put_general_data(b'po' + location, txout.pk_script)
         tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
         self.put_atomicals_utxo(location, atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
+        add_ft_transfer_out_trace(self.ft_transfer_trace_out_cache, tx_hash, out_idx,
+                                  txout.pk_script,
+                                  txout.value)
     
     # Build a map of atomical id to the type, value, and input indexes
     # This information is used below to assess which inputs are of which type and therefore which outputs to color
@@ -2694,6 +2711,7 @@ class BlockProcessor:
                     tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
                     self.put_atomicals_utxo(location, potential_dmt_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(potential_dmt_atomical_id, location, scripthash + value_sats)
+                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash, True)
                     return potential_dmt_atomical_id
                 self.logger.info(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
             else: 
@@ -2705,12 +2723,12 @@ class BlockProcessor:
         return None
 
     def is_atomicals_activated(self, height): 
-        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+        if height >= ACTIVE_HEIGHT:
             return True 
         return False 
 
     def is_dmint_activated(self, height): 
-        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
+        if height >= ACTIVE_HEIGHT:
             return True 
         return False 
 
@@ -2751,10 +2769,10 @@ class BlockProcessor:
         prev_atomicals_block_hash = b''
         if self.is_atomicals_activated(height):
             block_header_hash = self.coin.header_hash(header)
-            if height == self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+            if height == ACTIVE_HEIGHT:
                 self.logger.info(f'Atomicals Genesis Block Hash: {hash_to_hex_str(block_header_hash)}')
                 concatenation_of_tx_hashes_with_valid_atomical_operation = block_header_hash
-            elif height > self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+            elif height > ACTIVE_HEIGHT:
                 prev_atomicals_block_hash = self.get_general_data_with_cache(b'tt' + pack_le_uint32(height - 1))
                 concatenation_of_tx_hashes_with_valid_atomical_operation = block_header_hash + prev_atomicals_block_hash
         # Use local vars for speed in the loops
@@ -2801,6 +2819,8 @@ class BlockProcessor:
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
                             self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
+                        add_ft_in_trace(self.ft_transfer_trace_in_cache, tx_hash, txin.prev_hash, txin_index,
+                                        atomicals_transferred_list)
                     # Get the undo format for the spent atomicals
                     reformatted_for_undo_entries = []
                     for atomicals_entry in atomicals_transferred_list:
@@ -2893,6 +2913,7 @@ class BlockProcessor:
 
                 if has_at_least_one_valid_atomicals_operation:
                     put_general_data(b'th' + pack_le_uint32(height) + pack_le_uint64(tx_num) + tx_hash, tx_hash)
+                    merge_and_clean_trace(self.trace_cache,self.ft_transfer_trace_in_cache,self.ft_transfer_trace_out_cache)
                     
             append_hashXs(hashXs)
             update_touched(hashXs)
@@ -2905,6 +2926,7 @@ class BlockProcessor:
         self.db.atomical_counts.append(atomical_num)
             
         if self.is_atomicals_activated(height):
+            flush_trace(self.trace_cache,self.general_data_cache,height)
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(concatenation_of_tx_hashes_with_valid_atomical_operation)
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
@@ -3575,6 +3597,7 @@ class BlockProcessor:
         '''
         self._caught_up_event = caught_up_event
         await self._first_open_dbs()
+        start_http(self.db)
         try:
             async with OldTaskGroup() as group:
                 await group.spawn(self.prefetcher.main_loop(self.height))

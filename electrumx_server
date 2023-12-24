@@ -38,6 +38,5 @@ def main():
     else:
         logger.info('ElectrumX server terminated normally')
 
-
 if __name__ == '__main__':
     main()
