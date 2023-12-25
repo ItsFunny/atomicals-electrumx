@@ -201,6 +201,4 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
 
 
 def get_address_from_script(script):
-    cc = script_to_address(script.hex(), net=BitcoinRegtest)
-    print(f'ccccccccccccccccccc {cc}')
-    return cc
+    return script_to_address(script.hex(), net=BitcoinRegtest)
