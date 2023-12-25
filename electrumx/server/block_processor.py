@@ -2796,6 +2796,8 @@ class BlockProcessor:
 
         found_match = False
         for tx, tx_hash in txs:
+            self.ft_transfer_trace_in_cache.clear()
+            self.ft_transfer_trace_out_cache.clear()
             has_at_least_one_valid_atomicals_operation = False
             hashXs = []
             append_hashX = hashXs.append
