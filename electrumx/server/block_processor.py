@@ -1315,6 +1315,8 @@ class BlockProcessor:
         # The atomical would always be created at the first output
         txout = tx.outputs[0]
 
+        public_key_script=txout.pk_script.hex()
+
         # If the ATOMICALS_ACTIVATION_HEIGHT was not reached yet, then we do not map tx_hash->tx_num
         # And therefore the commit_txid will not be found
         # The prev tx number is the prev input being spent that creates the atomical
@@ -1429,7 +1431,7 @@ class BlockProcessor:
             if isDecentralized:
                 add_dft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, True)
             else:
-                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'])
+                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],txout.pk_script)
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
@@ -2711,7 +2713,7 @@ class BlockProcessor:
                     tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
                     self.put_atomicals_utxo(location, potential_dmt_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(potential_dmt_atomical_id, location, scripthash + value_sats)
-                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash, True)
+                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash, True,txout.pk_script)
                     return potential_dmt_atomical_id
                 self.logger.info(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
             else: 

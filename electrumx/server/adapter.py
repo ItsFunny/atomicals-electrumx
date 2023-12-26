@@ -5,6 +5,9 @@ from cbor2 import dumps, loads, CBORDecodeError
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str
 
+from electrum.bitcoin import script_to_address
+from electrum.constants import BitcoinRegtest
+
 # TODO: delete
 ACTIVE_HEIGHT = 1
 
@@ -93,11 +96,11 @@ def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index,
 def add_ft_transfer_out_trace(ft_transfer_trace_out_cache, tx_hash, output_index, script, value):
     print(
         f'add transfer out trace,tx_hash:{hash_to_hex_str(tx_hash)},output_index:{output_index},script:{hash_to_hex_str(script)},value:{value}')
-    script = get_address_from_script(script)
+    address = get_address_from_script(script)
     cache = ft_transfer_trace_out_cache.get(tx_hash)
     node = {
         "output_index": output_index,
-        "address": script,
+        "address": address,
         "value": value
     }
     if cache:
@@ -115,9 +118,10 @@ def make_point_dict(tx_id, inscription_context):
     }
 
 
-def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy):
+def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy,pubkey_script):
     inscription_context_dict = {
         "is_deploy": is_deploy,
+        "address":get_address_from_script(pubkey_script),
         "time": payload["args"]["time"],
         "nonce": payload["args"]["nonce"],
         "bitworkc": payload["args"]["bitworkc"],
@@ -127,9 +131,10 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy):
     trace_cache.append(make_point_dict(tx_hash, inscription_context))
 
 
-def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply):
+def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply,pubkey_script):
     inscription_context_dict = {
         "args": operations_found_at_inputs["args"],
+        "address":get_address_from_script(pubkey_script),
         "desc": operations_found_at_inputs["desc"],
         "name": operations_found_at_inputs["name"],
         "image": operations_found_at_inputs["image"],
@@ -196,4 +201,4 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
 
 
 def get_address_from_script(script):
-    return script
+    return script_to_address(script.hex(), net=BitcoinRegtest)
