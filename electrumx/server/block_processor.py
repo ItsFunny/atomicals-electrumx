@@ -2923,7 +2923,6 @@ class BlockProcessor:
             update_touched(hashXs)
             tx_num += 1
 
-        print(f'height {height} {len(txs)} {tx_num}')
         if height>=808080:
             raise 'fuck stop'
         self.db.history.add_unflushed(hashXs_by_tx, self.tx_count)
@@ -2938,7 +2937,8 @@ class BlockProcessor:
             current_height_atomicals_block_hash = self.coin.header_hash(concatenation_of_tx_hashes_with_valid_atomical_operation)
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
             if height<808080 and height%500==0:
-              self.logger.info(f'Calculated Atomicals Block Hash: height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
+                print(f'height {height} {len(txs)} {tx_num}')
+                self.logger.info(f'Calculated Atomicals Block Hash: height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
         
         return undo_info, atomicals_undo_info
 
