@@ -1419,7 +1419,8 @@ class BlockProcessor:
             isDecentralized = False
             # Add $max_supply informative property
             if mint_info['subtype'] == 'decentralized':
-                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints'] 
+                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints']
+                isDecentralized = True
             else: 
                 mint_info['$max_supply'] = txout.value
             if not self.create_or_delete_ticker_entry_if_requested(mint_info, height, Delete):

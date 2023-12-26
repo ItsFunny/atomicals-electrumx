@@ -1,3 +1,4 @@
+import asyncio
 import struct
 
 import electrumx.lib.util
@@ -31,9 +32,8 @@ class TransferTrace:
 # TODO: optimize?
 def get_block_traces(db, height, page, limit):
     key = b'okx' + electrumx.lib.util.pack_le_uint64(height)
-
     try:
-        raw_data = db.read_raw_block(height)
+        raw_data = asyncio.run(db.raw_header(height))
     except FileNotFoundError:
         return None
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
@@ -59,11 +59,7 @@ def get_block_traces(db, height, page, limit):
     return None
 
 
-def parse_block_header(raw_block_data):
-    # 区块头长度为 80 字节
-    block_header_data = raw_block_data[:80]
-
-    # 解析区块头中的字段
+def parse_block_header(block_header_data):
     version = struct.unpack('<I', block_header_data[:4])[0]  # 版本号
     prev_block_hash = block_header_data[4:36].hex()  # 前一区块的哈希值
     merkle_root = block_header_data[36:68].hex()  # Merkle 根
@@ -118,10 +114,11 @@ def make_point_dict(tx_id, inscription_context):
     }
 
 
-def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy,pubkey_script):
+def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
+    print(f'----- add_dmt_trace -----')
     inscription_context_dict = {
         "is_deploy": is_deploy,
-        "address":get_address_from_script(pubkey_script),
+        "address": get_address_from_script(pubkey_script),
         "time": payload["args"]["time"],
         "nonce": payload["args"]["nonce"],
         "bitworkc": payload["args"]["bitworkc"],
@@ -130,10 +127,11 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy,pubkey_script):
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
 
-def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply,pubkey_script):
+def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, pubkey_script):
+    print(f'----- add_ft_trace -----')
     inscription_context_dict = {
         "args": operations_found_at_inputs["args"],
-        "address":get_address_from_script(pubkey_script),
+        "address": get_address_from_script(pubkey_script),
         "desc": operations_found_at_inputs["desc"],
         "name": operations_found_at_inputs["name"],
         "image": operations_found_at_inputs["image"],
@@ -146,6 +144,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply,pu
 
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
+    print(f'----- add_dft_trace -----')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "args": operations_found_at_inputs["args"],
@@ -163,6 +162,8 @@ def flush_trace(traces, general_data_cache, height):
     put_general_data = general_data_cache.__setitem__
     data = dumps(traces)
     put_general_data(trace_key, data)
+    if len(data) != 1:
+        print(f'----- flush_trace {len(data)}')
     traces.clear()
 
 
