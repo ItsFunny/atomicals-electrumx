@@ -127,8 +127,7 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy,pubkey_script):
         "bitworkc": payload["args"]["bitworkc"],
         "mint_ticker": payload["args"]["mint_ticker"]
     }
-    inscription_context = dumps(inscription_context_dict)
-    trace_cache.append(make_point_dict(tx_hash, inscription_context))
+    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
 
 def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply,pubkey_script):
@@ -143,8 +142,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply,pu
         "decimals": operations_found_at_inputs["decimals"],
         "tx_out_value": max_supply,
     }
-    inscription_context = dumps(inscription_context_dict)
-    trace_cache.append(make_point_dict(tx_hash, inscription_context))
+    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
@@ -157,8 +155,7 @@ def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
         "legal": operations_found_at_inputs["legal"],
         "links": operations_found_at_inputs["links"],
     }
-    inscription_context = dumps(inscription_context_dict)
-    trace_cache.append(make_point_dict(tx_hash, inscription_context))
+    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
 
 def flush_trace(traces, general_data_cache, height):
@@ -188,13 +185,11 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
             "vin": trace.vin,
             "vout": trace.vout
         }
-        json_data = dumps(transfer_trace_dict)
-        print(f'tx_id:{hash_to_hex_str(tx_id)},trace:{trace}')
         point = {
             "protocol_name": "arc20",
             "btc_txid": hash_to_hex_str(tx_id),
             "inscription": "",
-            "inscription_context": json_data
+            "inscription_context": transfer_trace_dict
         }
         ret.append(point)
     return ret
