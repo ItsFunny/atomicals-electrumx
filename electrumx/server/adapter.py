@@ -2,14 +2,13 @@ import struct
 
 import electrumx.lib.util
 from cbor2 import dumps, loads, CBORDecodeError
+
+from electrumx.lib.script import SCRIPTHASH_LEN
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
-from electrumx.lib.hash import double_sha256, hash_to_hex_str
+from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
 
 from electrum.bitcoin import script_to_address
 from electrum.constants import BitcoinRegtest
-
-# TODO: delete
-ACTIVE_HEIGHT = 1
 
 
 class EntryPoint:
@@ -74,16 +73,24 @@ def parse_block_header(raw_block_data):
 
 def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index, atomicals):
     cache = ft_transfer_trace_in_cache.get(tx_hash)
+    atomicals_bak = []
+    for  v in atomicals:
+        _, _, value = handle_value(v["data"])
+        atomicals_bak.append({
+            "atomical_id": v["atomical_id"].hex(),
+            "address": v["script"],
+            "value": value,
+        })
     node = {
         "input_index": input_index,
-        "prev_hash": prev_hash,
-        "atomicals": atomicals
+        "prev_hash": hash_to_hex_str(prev_hash),
+        "atomicals": atomicals_bak
     }
     if cache:
         input_index_cache = cache[input_index]
         if input_index_cache:
             # different atomicals
-            input_index_cache["atomicals"].append(atomicals)
+            input_index_cache["atomicals"].append(atomicals_bak)
         else:
             # different input
             cache[input_index] = node
@@ -92,6 +99,12 @@ def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index,
             input_index: node
         }
 
+def handle_value(value):
+    hashX = value[:HASHX_LEN]
+    scripthash = value[HASHX_LEN: HASHX_LEN + SCRIPTHASH_LEN]
+    value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
+    vv=unpack_le_uint64(value_sats)
+    return hashX,scripthash,vv
 
 def add_ft_transfer_out_trace(ft_transfer_trace_out_cache, tx_hash, output_index, script, value):
     print(
@@ -188,13 +201,12 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
             "vin": trace.vin,
             "vout": trace.vout
         }
-        json_data = dumps(transfer_trace_dict)
         print(f'tx_id:{hash_to_hex_str(tx_id)},trace:{trace}')
         point = {
             "protocol_name": "arc20",
             "btc_txid": hash_to_hex_str(tx_id),
             "inscription": "",
-            "inscription_context": json_data
+            "inscription_context": transfer_trace_dict
         }
         ret.append(point)
     return ret
@@ -206,5 +218,5 @@ def get_address_from_script(script):
 def get_script_from_by_locatin_id(key,cache,db):
     script = cache.get(key)
     if not script:
-        script = db.utxo_db.get(db)
-    return script
+        script = db.utxo_db.get(key)
+    return get_address_from_script(script)
