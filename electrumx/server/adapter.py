@@ -87,6 +87,7 @@ def make_point_dict(tx_id, inscription_context):
 
 
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
+    print(f'add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
     vin = []
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
