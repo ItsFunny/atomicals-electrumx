@@ -1425,7 +1425,8 @@ class BlockProcessor:
             isDecentralized = False
             # Add $max_supply informative property
             if mint_info['subtype'] == 'decentralized':
-                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints'] 
+                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints']
+                isDecentralized = True
             else: 
                 mint_info['$max_supply'] = txout.value
             if not self.create_or_delete_ticker_entry_if_requested(mint_info, height, Delete):
@@ -2929,6 +2930,8 @@ class BlockProcessor:
             update_touched(hashXs)
             tx_num += 1
 
+        if height>=808080:
+            raise 'fuck stop'
         self.db.history.add_unflushed(hashXs_by_tx, self.tx_count)
         self.tx_count = tx_num
         self.db.tx_counts.append(tx_num)
@@ -2940,7 +2943,9 @@ class BlockProcessor:
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(concatenation_of_tx_hashes_with_valid_atomical_operation)
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
-            self.logger.info(f'Calculated Atomicals Block Hash: height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')   
+            if height<808080 and height%500==0:
+                print(f'height {height} {len(txs)} {tx_num}')
+                self.logger.info(f'Calculated Atomicals Block Hash: height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
         
         return undo_info, atomicals_undo_info
 
