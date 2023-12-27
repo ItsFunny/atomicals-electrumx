@@ -1410,7 +1410,7 @@ class BlockProcessor:
             if not self.create_or_delete_subrealm_entry_if_requested(mint_info, atomicals_spent_at_inputs, height, Delete):
                 return None
 
-            if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+            if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
                 if not self.create_or_delete_dmitem_entry_if_requested(mint_info, operations_found_at_inputs['payload'], height, Delete):
                     return None
 
@@ -1582,7 +1582,7 @@ class BlockProcessor:
         put_general_data = self.general_data_cache.__setitem__
         # Use a simplified mapping of NFTs using FIFO to the outputs 
         output_colored_map = {}
-        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
             nft_map = self.build_nft_input_idx_to_atomical_map(atomicals_spent_at_inputs)
             next_output_idx = 0
             map_output_idxs_for_atomicals = {}
@@ -2733,7 +2733,7 @@ class BlockProcessor:
         return False 
 
     def is_dmint_activated(self, height): 
-        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
+        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_DMINT:
             return True 
         return False 
 
