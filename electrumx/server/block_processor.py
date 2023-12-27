@@ -15,8 +15,8 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
-from electrumx.server.adapter import add_ft_in_trace, add_ft_transfer_out_trace, merge_and_clean_trace, \
-    ACTIVE_HEIGHT, flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_address_from_script
+from electrumx.server.adapter import add_ft_in_trace,  add_ft_transfer_out_trace, merge_and_clean_trace, \
+    ACTIVE_HEIGHT, flush_trace,add_dft_trace,add_ft_trace,add_dmt_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -849,14 +849,10 @@ class BlockProcessor:
             for key in cache_map.keys(): 
                 value_with_tombstone = cache_map[key]
                 value = value_with_tombstone['value']
-                script = self.db.utxo_db.get(b'po' + location_id)
-                address=get_address_from_script(script)
-                self.logger.info(f'address:{address}');
                 atomicals_data_list_cached.append({
                     'atomical_id': key,
                     'location_id': location_id,
-                    'data': value,
-                    'script':script
+                    'data': value
                 })
                 if live_run:
                     value_with_tombstone['found_in_cache'] = True
@@ -884,15 +880,11 @@ class BlockProcessor:
             if live_run:
                 self.delete_general_data(b'a' + atomical_id + location_id)
                 self.logger.info(f'spend_atomicals_utxo: utxo_db. location_id={location_id_bytes_to_compact(location_id)} atomical_id={location_id_bytes_to_compact(atomical_id)}, value={atomical_i_db_value}')
-
-            script = self.db.utxo_db.get(b'po' + location_id)
-            address=get_address_from_script(script)
-            self.logger.info(f'address:{address}');
+            
             atomicals_data_list.append({
                 'atomical_id': atomical_id,
                 'location_id': location_id,
-                'data': atomical_i_db_value,
-                'script':script
+                'data': atomical_i_db_value
             })
             
             # Return all of the atomicals spent at the address
