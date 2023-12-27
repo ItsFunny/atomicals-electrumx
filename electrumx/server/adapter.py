@@ -11,6 +11,8 @@ from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
 from electrum.bitcoin import script_to_address
 from electrum.constants import BitcoinRegtest
 
+from electrumx.lib.util_atomicals import location_id_bytes_to_compact
+
 
 class EntryPoint:
     tx_id: str
@@ -67,55 +69,12 @@ def parse_block_header(block_header_data):
     return version, prev_block_hash, merkle_root, timestamp
 
 
-def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index, atomicals):
-    cache = ft_transfer_trace_in_cache.get(tx_hash)
-    atomicals_bak = []
-    for  v in atomicals:
-        _, _, value = handle_value(v["data"])
-        atomicals_bak.append({
-            "atomical_id": v["atomical_id"].hex(),
-            "address": v["script"],
-            "value": value,
-        })
-    node = {
-        "input_index": input_index,
-        "prev_hash": hash_to_hex_str(prev_hash),
-        "atomicals": atomicals_bak
-    }
-    if cache:
-        input_index_cache = cache[input_index]
-        if input_index_cache:
-            # different atomicals
-            input_index_cache["atomicals"].append(atomicals_bak)
-        else:
-            # different input
-            cache[input_index] = node
-    else:
-        ft_transfer_trace_in_cache[tx_hash] = {
-            input_index: node
-        }
-
 def handle_value(value):
     hashX = value[:HASHX_LEN]
     scripthash = value[HASHX_LEN: HASHX_LEN + SCRIPTHASH_LEN]
     value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
-    vv=unpack_le_uint64(value_sats)
-    return hashX,scripthash,vv
-
-def add_ft_transfer_out_trace(ft_transfer_trace_out_cache, tx_hash, output_index, script, value):
-    print(
-        f'add transfer out trace,tx_hash:{hash_to_hex_str(tx_hash)},output_index:{output_index},script:{hash_to_hex_str(script)},value:{value}')
-    address = get_address_from_script(script)
-    cache = ft_transfer_trace_out_cache.get(tx_hash)
-    node = {
-        "output_index": output_index,
-        "address": address,
-        "value": value
-    }
-    if cache:
-        cache.append(node)
-    else:
-        ft_transfer_trace_out_cache[tx_hash] = [node]
+    vv = unpack_le_uint64(value_sats)
+    return hashX, scripthash, vv
 
 
 def make_point_dict(tx_id, inscription_context):
@@ -125,6 +84,34 @@ def make_point_dict(tx_id, inscription_context):
         "inscription": "",
         "inscription_context": inscription_context
     }
+
+
+def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
+    vin = []
+    for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
+        for atomic in atomicals_entry_list:
+            atomical_id = atomic["atomical_id"]
+            script = atomic["script"]
+            _, _, value = handle_value(atomic["data"])
+            vin.append({
+                "atomical_id": location_id_bytes_to_compact(atomical_id),
+                "script_hash": script,
+                "value": value
+            })
+    vout = []
+    for idx, txout in enumerate(tx.outputs):
+        script = get_address_from_script(txout.pk_script)
+        value = txout.value
+        vout.append({
+            "output_index": idx,
+            "script_hash": script,
+            "value": value
+        })
+    trace_cache.append(make_point_dict(tx_hash, {
+        "tx_id": hash_to_hex_str(tx_hash),
+        "vin": vin,
+        "vout": vout
+    }))
 
 
 def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
@@ -180,39 +167,11 @@ def flush_trace(traces, general_data_cache, height):
     traces.clear()
 
 
-def merge_and_clean_trace(traces, ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
-    traces.extend(transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache))
-    ft_transfer_trace_in_cache.clear()
-    ft_transfer_trace_out_cache.clear()
-
-
-def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
-    ret = []
-    for tx_id, out in ft_transfer_trace_out_cache.items():
-        trace = TransferTrace()
-        inpus = ft_transfer_trace_in_cache.get(tx_id)
-        if not inpus:
-            raise IndexError(f'not found tx_id:{hash_to_hex_str(tx_id)} in ft_transfer_trace_in_cache')
-        trace.vout = out
-        trace.vin = inpus
-        transfer_trace_dict = {
-            "vin": trace.vin,
-            "vout": trace.vout
-        }
-        point = {
-            "protocol_name": "arc20",
-            "btc_txid": hash_to_hex_str(tx_id),
-            "inscription": "",
-            "inscription_context": transfer_trace_dict
-        }
-        ret.append(point)
-    return ret
-
-
 def get_address_from_script(script):
     return script_to_address(script.hex(), net=BitcoinRegtest)
 
-def get_script_from_by_locatin_id(key,cache,db):
+
+def get_script_from_by_locatin_id(key, cache, db):
     script = cache.get(key)
     if not script:
         script = db.utxo_db.get(key)
