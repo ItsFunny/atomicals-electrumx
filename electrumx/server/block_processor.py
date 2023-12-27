@@ -15,8 +15,8 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
-from electrumx.server.adapter import add_ft_in_trace,  add_ft_transfer_out_trace, merge_and_clean_trace, \
-    ACTIVE_HEIGHT, flush_trace,add_dft_trace,add_ft_trace,add_dmt_trace
+from electrumx.server.adapter import add_ft_in_trace, add_ft_transfer_out_trace, merge_and_clean_trace, \
+    ACTIVE_HEIGHT, flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_script_from_by_locatin_id
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -846,13 +846,16 @@ class BlockProcessor:
         if cache_map:
             self.logger.info(f'spend_atomicals_utxo: cache_map. location_id={location_id_bytes_to_compact(location_id)} has Atomicals...')
             atomicals_data_list_cached = []
-            for key in cache_map.keys(): 
+            for key in cache_map.keys():
                 value_with_tombstone = cache_map[key]
                 value = value_with_tombstone['value']
+                location_key=b'po' + location_id
+                script=get_script_from_by_locatin_id(location_key,self.general_data_cache,self.db)
                 atomicals_data_list_cached.append({
                     'atomical_id': key,
                     'location_id': location_id,
-                    'data': value
+                    'data': value,
+                    'script':script
                 })
                 if live_run:
                     value_with_tombstone['found_in_cache'] = True
@@ -880,11 +883,14 @@ class BlockProcessor:
             if live_run:
                 self.delete_general_data(b'a' + atomical_id + location_id)
                 self.logger.info(f'spend_atomicals_utxo: utxo_db. location_id={location_id_bytes_to_compact(location_id)} atomical_id={location_id_bytes_to_compact(atomical_id)}, value={atomical_i_db_value}')
-            
+
+            location_key=b'po' + location_id
+            script=get_script_from_by_locatin_id(location_key,self.general_data_cache,self.db)
             atomicals_data_list.append({
                 'atomical_id': atomical_id,
                 'location_id': location_id,
-                'data': atomical_i_db_value
+                'data': atomical_i_db_value,
+                'script':script,
             })
             
             # Return all of the atomicals spent at the address

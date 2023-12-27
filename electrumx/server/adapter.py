@@ -202,3 +202,9 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
 
 def get_address_from_script(script):
     return script_to_address(script.hex(), net=BitcoinRegtest)
+
+def get_script_from_by_locatin_id(key,cache,db):
+    script = cache.get(key)
+    if not script:
+        script = db.utxo_db.get(db)
+    return script
