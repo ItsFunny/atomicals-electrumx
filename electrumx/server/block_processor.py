@@ -16,7 +16,7 @@ from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
 from electrumx.server.adapter import add_ft_in_trace, add_ft_transfer_out_trace, merge_and_clean_trace, \
-    ACTIVE_HEIGHT, flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_script_from_by_locatin_id
+     flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_address_from_script,get_script_from_by_locatin_id
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -1331,7 +1331,7 @@ class BlockProcessor:
         if not commit_tx_num:
             self.logger.info(f'create_or_delete_atomical: commit_txid not found for reveal_tx {hash_to_hex_str(commit_txid)}. Skipping...')
             return None
-        if commit_tx_height < ACTIVE_HEIGHT:
+        if commit_tx_height < self.coin.ATOMICALS_ACTIVATION_HEIGHT:
             self.logger.info(f'create_or_delete_atomical: commit_tx_height={commit_tx_height} is less than ATOMICALS_ACTIVATION_HEIGHT. Skipping...')
             return None
 
@@ -1412,7 +1412,7 @@ class BlockProcessor:
             if not self.create_or_delete_subrealm_entry_if_requested(mint_info, atomicals_spent_at_inputs, height, Delete):
                 return None
 
-            if height >= ACTIVE_HEIGHT:
+            if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
                 if not self.create_or_delete_dmitem_entry_if_requested(mint_info, operations_found_at_inputs['payload'], height, Delete):
                     return None
 
@@ -1583,7 +1583,7 @@ class BlockProcessor:
         put_general_data = self.general_data_cache.__setitem__
         # Use a simplified mapping of NFTs using FIFO to the outputs 
         output_colored_map = {}
-        if height >= ACTIVE_HEIGHT:
+        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
             nft_map = self.build_nft_input_idx_to_atomical_map(atomicals_spent_at_inputs)
             next_output_idx = 0
             map_output_idxs_for_atomicals = {}
@@ -2731,12 +2731,12 @@ class BlockProcessor:
         return None
 
     def is_atomicals_activated(self, height): 
-        if height >= ACTIVE_HEIGHT:
+        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
             return True 
         return False 
 
     def is_dmint_activated(self, height): 
-        if height >= ACTIVE_HEIGHT:
+        if height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT:
             return True 
         return False 
 
@@ -2777,10 +2777,10 @@ class BlockProcessor:
         prev_atomicals_block_hash = b''
         if self.is_atomicals_activated(height):
             block_header_hash = self.coin.header_hash(header)
-            if height == ACTIVE_HEIGHT:
+            if height == self.coin.ATOMICALS_ACTIVATION_HEIGHT:
                 self.logger.info(f'Atomicals Genesis Block Hash: {hash_to_hex_str(block_header_hash)}')
                 concatenation_of_tx_hashes_with_valid_atomical_operation = block_header_hash
-            elif height > ACTIVE_HEIGHT:
+            elif height > self.coin.ATOMICALS_ACTIVATION_HEIGHT:
                 prev_atomicals_block_hash = self.get_general_data_with_cache(b'tt' + pack_le_uint32(height - 1))
                 concatenation_of_tx_hashes_with_valid_atomical_operation = block_header_hash + prev_atomicals_block_hash
         # Use local vars for speed in the loops
