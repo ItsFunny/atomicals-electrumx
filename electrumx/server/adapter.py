@@ -73,11 +73,6 @@ def parse_block_header(raw_block_data):
 
 def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index, atomicals):
     cache = ft_transfer_trace_in_cache.get(tx_hash)
-    node = {
-        "input_index": input_index,
-        "prev_hash": hash_to_hex_str(prev_hash),
-        "atomicals": atomicals
-    }
     atomicals_bak = []
     for  v in atomicals:
         _, _, value = handle_value(v["data"])
@@ -86,6 +81,11 @@ def add_ft_in_trace(ft_transfer_trace_in_cache, tx_hash, prev_hash, input_index,
             "address": v["script"],
             "value": value,
         })
+    node = {
+        "input_index": input_index,
+        "prev_hash": hash_to_hex_str(prev_hash),
+        "atomicals": atomicals_bak
+    }
     if cache:
         input_index_cache = cache[input_index]
         if input_index_cache:
@@ -201,13 +201,12 @@ def transfer_merge(ft_transfer_trace_in_cache, ft_transfer_trace_out_cache):
             "vin": trace.vin,
             "vout": trace.vout
         }
-        json_data = dumps(transfer_trace_dict)
         print(f'tx_id:{hash_to_hex_str(tx_id)},trace:{trace}')
         point = {
             "protocol_name": "arc20",
             "btc_txid": hash_to_hex_str(tx_id),
             "inscription": "",
-            "inscription_context": json_data
+            "inscription_context": transfer_trace_dict
         }
         ret.append(point)
     return ret
@@ -219,5 +218,5 @@ def get_address_from_script(script):
 def get_script_from_by_locatin_id(key,cache,db):
     script = cache.get(key)
     if not script:
-        script = db.utxo_db.get(db)
+        script = db.utxo_db.get(key)
     return get_address_from_script(script)
