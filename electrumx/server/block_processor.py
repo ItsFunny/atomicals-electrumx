@@ -15,8 +15,9 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
-from electrumx.server.adapter import add_ft_in_trace, add_ft_transfer_out_trace, merge_and_clean_trace, \
-     flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_address_from_script,get_script_from_by_locatin_id
+from electrumx.server.adapter import \
+    flush_trace, add_dft_trace, add_ft_trace, add_dmt_trace, get_address_from_script, get_script_from_by_locatin_id, \
+    add_ft_transfer_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -287,9 +288,6 @@ class BlockProcessor:
         self.atomicals_rpc_format_cache = pylru.lrucache(100000)
         self.atomicals_rpc_general_cache = pylru.lrucache(100000)
 
-
-        self.ft_transfer_trace_in_cache = {}
-        self.ft_transfer_trace_out_cache = {}
         self.trace_cache = []
   
     async def run_in_thread_with_lock(self, func, *args):
@@ -1751,10 +1749,7 @@ class BlockProcessor:
         put_general_data(b'po' + location, txout.pk_script)
         tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
         self.put_atomicals_utxo(location, atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
-        add_ft_transfer_out_trace(self.ft_transfer_trace_out_cache, tx_hash, out_idx,
-                                  txout.pk_script,
-                                  txout.value)
-    
+
     # Build a map of atomical id to the type, value, and input indexes
     # This information is used below to assess which inputs are of which type and therefore which outputs to color
     def build_atomical_id_info_map(self, map_atomical_ids_to_info, atomicals_entry_list, txin_index):
@@ -1827,6 +1822,7 @@ class BlockProcessor:
         # Process the FTs
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
+            add_ft_transfer_trace(self.trace_cache,tx_hash,tx,atomicals_spent_at_inputs)
             if should_split_ft_atomicals:
                 if not self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, True):
                     self.logger.info(f'color_atomicals_outputs:color_ft_atomicals_split cleanly_assigned=False tx_hash={tx_hash}')
@@ -2805,8 +2801,6 @@ class BlockProcessor:
 
         found_match = False
         for tx, tx_hash in txs:
-            self.ft_transfer_trace_in_cache.clear()
-            self.ft_transfer_trace_out_cache.clear()
             has_at_least_one_valid_atomicals_operation = False
             hashXs = []
             append_hashX = hashXs.append
@@ -2830,8 +2824,6 @@ class BlockProcessor:
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
                             self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
-                        add_ft_in_trace(self.ft_transfer_trace_in_cache, tx_hash, txin.prev_hash, txin_index,
-                                        atomicals_transferred_list)
                     # Get the undo format for the spent atomicals
                     reformatted_for_undo_entries = []
                     for atomicals_entry in atomicals_transferred_list:
@@ -2924,8 +2916,7 @@ class BlockProcessor:
 
                 if has_at_least_one_valid_atomicals_operation:
                     put_general_data(b'th' + pack_le_uint32(height) + pack_le_uint64(tx_num) + tx_hash, tx_hash)
-                    merge_and_clean_trace(self.trace_cache,self.ft_transfer_trace_in_cache,self.ft_transfer_trace_out_cache)
-                    
+
             append_hashXs(hashXs)
             update_touched(hashXs)
             tx_num += 1

@@ -664,7 +664,7 @@ class Bitcoin(BitcoinMixin, Coin):
         'v7o2hkemnt677k3jxcbosmjjxw3p5khjyu7jwv7orfy6rwtkizbshwqd.onion t57001'
         'nf365b5sbzk5j4jreimskffwnfpka7qtamyni5doohoom3g63o5tldad.onion t'
     ]
-    ATOMICALS_ACTIVATION_HEIGHT = 808080
+    ATOMICALS_ACTIVATION_HEIGHT = 1
     ATOMICALS_ACTIVATION_HEIGHT_DMINT = 819181 
     ATOMICALS_ACTIVATION_HEIGHT_COMMITZ = 822800
 
