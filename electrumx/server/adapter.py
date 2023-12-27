@@ -94,18 +94,19 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             atomical_id = atomic["atomical_id"]
             script = atomic["script"]
             _, _, value = handle_value(atomic["data"])
-            vin.append({
-                "atomical_id": location_id_bytes_to_compact(atomical_id),
-                "script_hash": script,
-                "value": value
-            })
+            for v in value:
+                vin.append({
+                    "atomical_id": location_id_bytes_to_compact(atomical_id),
+                    "address": script,
+                    "value": v
+                })
     vout = []
     for idx, txout in enumerate(tx.outputs):
         script = get_address_from_script(txout.pk_script)
         value = txout.value
         vout.append({
             "output_index": idx,
-            "script_hash": script,
+            "address": script,
             "value": value
         })
     trace_cache.append(make_point_dict(tx_hash, {
