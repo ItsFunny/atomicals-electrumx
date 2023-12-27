@@ -7,11 +7,7 @@ from cbor2 import dumps, loads, CBORDecodeError
 from electrumx.lib.script import SCRIPTHASH_LEN
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
-
-from electrum.bitcoin import script_to_address
-from electrum.constants import BitcoinRegtest
-
-from electrumx.lib.util_atomicals import location_id_bytes_to_compact
+from electrumx.lib.util_atomicals import location_id_bytes_to_compact, get_address_from_output_script
 
 
 class EntryPoint:
@@ -165,12 +161,12 @@ def flush_trace(traces, general_data_cache, height):
     data = dumps(traces)
     put_general_data(trace_key, data)
     if len(data) != 1:
-        print(f'----- flush_trace {len(data)}')
+        print(f'----- flush_trace {height} {len(data)}')
     traces.clear()
 
 
 def get_address_from_script(script):
-    return script_to_address(script.hex(), net=BitcoinRegtest)
+    return get_address_from_output_script(script.hex())
 
 
 def get_script_from_by_locatin_id(key, cache, db):
