@@ -83,7 +83,7 @@ def main():
                         context_data = tx["inscription_context"]
                         handle_context_tx_data(context_data)
         else:
-            print(f"请求失败，状态码: {response.status_code}")
+            print(f"error code: {response.status_code}")
 
     balance_instance.print_details()
     my_instance.print_detail()

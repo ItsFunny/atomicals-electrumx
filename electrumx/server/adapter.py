@@ -59,10 +59,10 @@ def get_block_traces(db, height, page, limit):
 
 
 def parse_block_header(block_header_data):
-    version = struct.unpack('<I', block_header_data[:4])[0]  # 版本号
-    prev_block_hash = block_header_data[4:36].hex()  # 前一区块的哈希值
-    merkle_root = block_header_data[36:68].hex()  # Merkle 根
-    timestamp = struct.unpack('<I', block_header_data[68:72])[0]  # 时间戳
+    version = struct.unpack('<I', block_header_data[:4])[0]
+    prev_block_hash = block_header_data[4:36].hex()
+    merkle_root = block_header_data[36:68].hex()
+    timestamp = struct.unpack('<I', block_header_data[68:72])[0]
 
     return version, prev_block_hash, merkle_root, timestamp
 
