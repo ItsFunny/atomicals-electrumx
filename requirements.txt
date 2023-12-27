@@ -9,4 +9,3 @@ regex
 krock32
 merkletools
 flask~=3.0.0
-git+https://github.com/spesmilo/electrum.git
