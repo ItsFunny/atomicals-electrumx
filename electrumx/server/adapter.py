@@ -34,6 +34,11 @@ def get_block_traces(db, height, page, limit):
     except FileNotFoundError:
         return None
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
+    print(f'scf---raw_data {raw_data} ')
+    print(f'scf---version {version} ')
+    print(f'scf---prev_block_hash {prev_block_hash} ')
+    print(f'scf---root {root} ')
+    print(f'scf---ts {ts} ')
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
