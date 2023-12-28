@@ -3036,9 +3036,9 @@ class BlockProcessor:
         # height=height+808081
         print(f'scf height {height} {len(txs)}')
 
-        if height==19:
-            print(f' sleep by scf')
-            time.sleep(10000000)
+        # if height==19:
+        #     print(f' sleep by scf')
+            # time.sleep(10000000)
 
 
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
