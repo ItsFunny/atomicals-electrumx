@@ -34,11 +34,6 @@ def get_block_traces(db, height, page, limit):
     except FileNotFoundError:
         return None
     version, prev_block_hash, root, ts = parse_block_header(raw_data)
-    print(f'scf---raw_data {raw_data} ')
-    print(f'scf---version {version} ')
-    print(f'scf---prev_block_hash {prev_block_hash} ')
-    print(f'scf---root {root} ')
-    print(f'scf---ts {ts} ')
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
@@ -66,13 +61,9 @@ def little_endian_to_big_endian(little_endian):
     return big_endian
 def parse_block_header(block_header_data):
     version = struct.unpack('<I', block_header_data[:4])[0]
-    prev_block_hash = block_header_data[4:36].hex()
-    merkle_root = block_header_data[36:68].hex()
+    prev_block_hash = little_endian_to_big_endian(block_header_data[4:36]).hex()
+    merkle_root = little_endian_to_big_endian(block_header_data[36:68]).hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
-    print(f'scf fuck  version {version}')
-    print(f'scf fuck  prev_block_hash {little_endian_to_big_endian(block_header_data[4:36]).hex()}')
-    print(f'scf fuck  merkle_root {little_endian_to_big_endian(block_header_data[36:68]).hex()}')
-    print(f'scf fuck  timestamp {timestamp}')
     return version, prev_block_hash, merkle_root, timestamp
 
 
