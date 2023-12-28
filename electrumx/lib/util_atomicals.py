@@ -587,12 +587,12 @@ def get_mint_info_op_factory(coin, tx, tx_hash, op_found_struct, atomicals_spent
             return None, None
 
         if realm:
-            print(f'NFT request_realm evaluating {hash_to_hex_str(tx_hash)}, {realm}')
+            # print(f'NFT request_realm evaluating {hash_to_hex_str(tx_hash)}, {realm}')
             if not isinstance(realm, str) or not is_valid_realm_string_name(realm):
                 print(f'NFT request_realm is invalid {hash_to_hex_str(tx_hash)}, {realm}. Skipping....')
                 return None, None 
             mint_info['$request_realm'] = realm
-            print(f'NFT request_realm_is_valid {hash_to_hex_str(tx_hash)}, {realm}')
+            # print(f'NFT request_realm_is_valid {hash_to_hex_str(tx_hash)}, {realm}')
         
         elif subrealm:
             if not isinstance(subrealm, str) or not is_valid_subrealm_string_name(subrealm):

@@ -926,7 +926,7 @@ class BlockProcessor:
     # Function to put the container, realm, and ticker names to the db.
     # This does not handle subrealms, because subrealms have a payment component and are handled slightly differently in another method
     def put_name_element_template(self, db_prefix_key, optional_subject_prefix, subject, tx_num, payload_value, name_data_cache): 
-        self.logger.info(f'put_name_element_template: db_prefix_key={db_prefix_key}, optional_subject_prefix={optional_subject_prefix}, subject={subject}, tx_num={tx_num}, payload_value={payload_value.hex()}')
+        # self.logger.info(f'put_name_element_template: db_prefix_key={db_prefix_key}, optional_subject_prefix={optional_subject_prefix}, subject={subject}, tx_num={tx_num}, payload_value={payload_value.hex()}')
         subject_enc = subject.encode()
         record_key = db_prefix_key + optional_subject_prefix + subject_enc + pack_le_uint16(len(subject_enc))
         if not name_data_cache.get(record_key):
@@ -1332,10 +1332,10 @@ class BlockProcessor:
         commit_txid = mint_info['commit_txid']
         commit_tx_num, commit_tx_height = self.get_tx_num_height_from_tx_hash(commit_txid)
         if not commit_tx_num:
-            self.logger.info(f'create_or_delete_atomical: commit_txid not found for reveal_tx {hash_to_hex_str(commit_txid)}. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: commit_txid not found for reveal_tx {hash_to_hex_str(commit_txid)}. Skipping...')
             return None
         if commit_tx_height < self.coin.ATOMICALS_ACTIVATION_HEIGHT:
-            self.logger.info(f'create_or_delete_atomical: commit_tx_height={commit_tx_height} is less than ATOMICALS_ACTIVATION_HEIGHT. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: commit_tx_height={commit_tx_height} is less than ATOMICALS_ACTIVATION_HEIGHT. Skipping...')
             return None
 
         # We add the following as a final sanity check to make sure invalid POW minted atomicals never get created
@@ -1345,7 +1345,7 @@ class BlockProcessor:
         # If the client requested any proof of work, then for the mint to be valid, the proof of work (in the commit or reveal, or both) must be valid
         is_pow_requested, pow_result = has_requested_proof_of_work(operations_found_at_inputs)
         if is_pow_requested and not pow_result: 
-            self.logger.info(f'create_or_delete_atomical: proof of work was requested, but the proof of work was invalid. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: proof of work was requested, but the proof of work was invalid. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
             return None 
 
         atomical_id = mint_info['id']
@@ -1359,7 +1359,7 @@ class BlockProcessor:
         
         # Too late to reveal in general
         if not is_within_acceptable_blocks_for_general_reveal(mint_info['commit_height'], mint_info['reveal_location_height']):
-            self.logger.info(f'create_or_delete_atomical: not is_within_acceptable_blocks_for_general_reveal. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: not is_within_acceptable_blocks_for_general_reveal. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
             return None
 
         # Do not allow mints if it is a name type if the name is invalid or known that it will fail (ex: because it was claimed already)
@@ -1377,11 +1377,11 @@ class BlockProcessor:
           
         # Too late to reveal, fail to mint then
         if is_name_type and not is_within_acceptable_blocks_for_name_reveal(mint_info['commit_height'], mint_info['reveal_location_height']):
-            self.logger.info(f'create_or_delete_atomical: not is_within_acceptable_blocks_for_name_reveal. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: not is_within_acceptable_blocks_for_name_reveal. Not minting Atomical at {hash_to_hex_str(tx_hash)}. Skipping...')
             return None
 
         if is_name_type and height >= self.coin.ATOMICALS_ACTIVATION_HEIGHT_COMMITZ and mint_info['commit_index'] != 0:
-            self.logger.info(f'create_or_delete_atomical: name type found and commit index is not equal to 0 at txid={hash_to_hex_str(tx_hash)}. Skipping...')
+            # self.logger.info(f'create_or_delete_atomical: name type found and commit index is not equal to 0 at txid={hash_to_hex_str(tx_hash)}. Skipping...')
             return None
                  
         if valid_create_op_type == 'NFT':
@@ -1392,7 +1392,7 @@ class BlockProcessor:
                 parent_atomical_id = compact_to_location_id_bytes(parent_atomical_id_compact)
                 parent_atomical_mint_info = self.get_atomicals_id_mint_info(parent_atomical_id)
                 if not parent_atomical_mint_info:
-                    self.logger.info(f'create_or_delete_atomical: found invalid $parent_realm for $request_realm and therefore returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
+                    # self.logger.info(f'create_or_delete_atomical: found invalid $parent_realm for $request_realm and therefore returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
 
             # Also handle the special case of a dmitem and it's $parent_container 
@@ -1402,7 +1402,7 @@ class BlockProcessor:
                 parent_atomical_id = compact_to_location_id_bytes(parent_atomical_id_compact)
                 parent_atomical_mint_info = self.get_atomicals_id_mint_info(parent_atomical_id)
                 if not parent_atomical_mint_info:
-                    self.logger.info(f'create_or_delete_atomical: found invalid $parent_container for $request_dmitem and therefore returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
+                    # self.logger.info(f'create_or_delete_atomical: found invalid $parent_container for $request_dmitem and therefore returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
 
             # Ensure that the creates are noops or successful
@@ -1436,7 +1436,7 @@ class BlockProcessor:
                 return None
             if not Delete:
                 if not self.validate_and_create_ft_mint_utxo(mint_info, tx_hash):
-                    self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
+                    # self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
             if isDecentralized:
                 print(f'scfadd----- add_dft_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
