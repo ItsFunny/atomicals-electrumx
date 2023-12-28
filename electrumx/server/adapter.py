@@ -149,7 +149,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
 
 def get_from_map(m, key):
     if key in m:
-        return m[k]
+        return m[key]
     # print(f'----- get from map error key {key} {m}')
     return ""
 
