@@ -42,7 +42,6 @@ def get_block_traces(db, height, page, limit):
     if value:
         txs = loads(value)
 
-
         len = txs.__len__()
         start = (page - 1) * limit
         end = page * limit
@@ -102,18 +101,39 @@ def make_point_dict(tx_id, inscription_context):
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     print(
         f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
-    vin = []
+    vin=[]
+    vin_dict = {}
+
+    print_log=False
+
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
+
             atomical_id = atomic["atomical_id"]
             script = atomic["script"]
             _, _, value = handle_value(atomic["data"])
-            for v in value:
-                vin.append({
-                    "atomical_id": location_id_bytes_to_compact(atomical_id),
-                    "address": script,
-                    "value": v
-                })
+
+            if atomical_id not in vin_dict:
+                vin_dict[atomical_id] = {}
+
+            if script not in vin_dict[atomical_id]:
+                vin_dict[atomical_id][script] = value
+            else:
+                vin_dict[atomical_id] += value
+                print_log=True
+
+    for atomical_id ,address_list in vin_dict.items():
+        for address,value in address_list.items():
+            vin.append({
+                "atomical_id":location_id_bytes_to_compact(atomical_id)
+                "address":address,
+                "value":value
+            })
+
+    if print_log:
+        print(f'scf bingo tx_hash {little_endian_to_big_endian(tx_hash).hex()} {atomicals_spent_at_inputs}')
+        print(f'scf bingo tx_hash {vin}')
+        
     vout = []
     for idx, txout in enumerate(tx.outputs):
         script = get_address_from_script(txout.pk_script)
