@@ -106,11 +106,10 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             atomical_id = atomic["atomical_id"]
             script = atomic["script"]
             _, _, value = handle_value(atomic["data"])
-            for v in value:
-                vin_old.append({
+            vin_old.append({
                     "atomical_id": location_id_bytes_to_compact(atomical_id),
                     "address": script,
-                    "value": v
+                    "value": value
                 })
 
     vin = []
