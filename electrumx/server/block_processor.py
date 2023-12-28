@@ -1580,10 +1580,10 @@ class BlockProcessor:
                         f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
             if isDecentralized:
-                print(f'scf----- add_dft_trace ----- {height} {tx_num}')
+                print(f'scfadd----- add_dft_trace ----- {height} {tx_num}')
                 add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, True)
             else:
-                print(f'scf----- add_ft_trace ----- {height} {tx_num}')
+                print(f'scfadd----- add_ft_trace ----- {height} {tx_num}')
                 add_ft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],
                              txout.pk_script)
         else:
@@ -2014,7 +2014,7 @@ class BlockProcessor:
             # Process the FTs
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
-            print(f'scf add-transfer {height} {tx_num}')
+            print(f'scfadd add-transfer {height} {tx_num}')
             add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs)
             if should_split_ft_atomicals:
                 if not self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs,
@@ -2978,7 +2978,7 @@ class BlockProcessor:
                     self.put_atomicals_utxo(location, potential_dmt_atomical_id,
                                             hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(potential_dmt_atomical_id, location, scripthash + value_sats)
-                    print(f'scf----- add_dmt_trace ----- {height} {tx_num}')
+                    print(f'scfadd----- add_dmt_trace ----- {height} {tx_num}')
                     add_dmt_trace(self.trace_cache, atomicals_operations_found_at_inputs["payload"], tx_hash, True,
                                   txout.pk_script)
                     return potential_dmt_atomical_id
