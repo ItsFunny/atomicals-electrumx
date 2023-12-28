@@ -82,7 +82,7 @@ def handle_value(value):
     hashX = value[:HASHX_LEN]
     scripthash = value[HASHX_LEN: HASHX_LEN + SCRIPTHASH_LEN]
     value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
-    vv = unpack_le_uint64(value_sats)
+    vv,_ = unpack_le_uint64(value_sats)
     return hashX, scripthash, vv
 
 
@@ -99,6 +99,20 @@ def make_point_dict(tx_id, inscription_context):
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     print(
         f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
+
+    vin_old = []
+    for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
+        for atomic in atomicals_entry_list:
+            atomical_id = atomic["atomical_id"]
+            script = atomic["script"]
+            _, _, value = handle_value(atomic["data"])
+            for v in value:
+                vin_old.append({
+                    "atomical_id": location_id_bytes_to_compact(atomical_id),
+                    "address": script,
+                    "value": v
+                })
+
     vin = []
     vin_dict = {}
 
@@ -129,8 +143,8 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             })
 
     if print_log:
-        print(f'scf bingo tx_hash {little_endian_to_big_endian(tx_hash).hex()} {atomicals_spent_at_inputs}')
-        print(f'scf bingo tx_hash {vin}')
+        print(f'scf bingo old {vin_old}')
+        print(f'scf bingo new {vin}')
 
     vout = []
     for idx, txout in enumerate(tx.outputs):
