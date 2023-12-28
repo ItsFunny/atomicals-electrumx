@@ -1,6 +1,7 @@
 import json
 import threading
 
+from _cbor2 import dump, dumps
 from flask import Flask
 from flask import request
 
@@ -23,15 +24,15 @@ def zero_indexer(height):
         ret={
             "code": 0,
             "msg": "success",
-            "data": json.dumps(block_data)
+            "data": dumps(block_data)
         }
-        ret=json.dumps(ret)
+        ret=dumps(ret)
         return ret
     ret={
         "code": 1,
         "msg": "block not found",
     }
-    ret=json.dumps(ret)
+    ret=dumps(ret)
     return ret
 
 def run_http():
