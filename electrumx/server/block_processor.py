@@ -190,7 +190,6 @@ class Prefetcher:
                 count = min(daemon_height - self.fetched_height, cache_room)
                 # Don't make too large a request
                 count = min(self.coin.max_fetch_blocks(first), max(count, 0))
-                count = 1
                 if not count:
                     self.caught_up = True
                     return False
