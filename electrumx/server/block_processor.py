@@ -3036,7 +3036,8 @@ class BlockProcessor:
         # height=height+808081
         print(f'scf height {height} {len(txs)}')
 
-        if height==3:
+        if height==19:
+            print(f' sleep by scf')
             time.sleep(10000000)
 
 
