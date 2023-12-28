@@ -36,7 +36,7 @@ def get_block_traces(db, height, page, limit):
         raw_data = asyncio.run(db.raw_header(height))
     except Exception as e:
         return None
-    version, prev_block_hash,  ts, block_hash = parse_block_header(raw_data)
+    version, prev_block_hash, ts, block_hash = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
@@ -99,10 +99,10 @@ def make_point_dict(tx_id, inscription_context):
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     print(
         f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
-    vin=[]
+    vin = []
     vin_dict = {}
 
-    print_log=False
+    print_log = False
 
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
@@ -117,15 +117,15 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             if script not in vin_dict[atomical_id]:
                 vin_dict[atomical_id][script] = value
             else:
-                vin_dict[atomical_id] += value
-                print_log=True
+                vin_dict[atomical_id][script] = vin_dict[atomical_id][script] + value
+                print_log = True
 
-    for atomical_id ,address_list in vin_dict.items():
-        for address,value in address_list.items():
+    for atomical_id, address_list in vin_dict.items():
+        for address, value in address_list.items():
             vin.append({
-                "atomical_id":location_id_bytes_to_compact(atomical_id),
-                "address":address,
-                "value":value
+                "atomical_id": location_id_bytes_to_compact(atomical_id),
+                "address": address,
+                "value": value
             })
 
     if print_log:
