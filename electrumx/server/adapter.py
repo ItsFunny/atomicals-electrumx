@@ -155,7 +155,9 @@ def get_from_map(m, key):
 
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
-    print(f'scf---detail {operations_found_at_inputs}')
+    print(f'scf---detail')
+    for k,v in operations_found_at_inputs.items():
+        print(f'scf k {k} {len(v)}')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "args": operations_found_at_inputs["args"],
