@@ -181,7 +181,7 @@ class Prefetcher:
         Repeats until the queue is full or caught up.
         '''
         if self.update_scf:
-            self.fetched_height = 808080
+            self.fetched_height = 808079
             # self.update_scf = False
         daemon = self.daemon
         daemon_height = await daemon.height()
@@ -197,9 +197,9 @@ class Prefetcher:
                 if not count:
                     self.caught_up = True
                     return False
-                print(f'start  {first} {count}')
+                print(f'scfsync start  {first} {count}')
                 hex_hashes = await daemon.block_hex_hashes(first, count)
-                print(f'end  {first} {count} {len(hex_hashes)}')
+                print(f'scfsync end  {first} {count} {len(hex_hashes)}')
                 if self.caught_up:
                     self.logger.info(f'new block height {first + count - 1:,d} '
                                      f'hash {hex_hashes[-1]}')
