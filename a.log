@@ -1,0 +1,15 @@
+INFO:electrumx:ElectrumX server starting
+WARNING:Env:lowered maximum sessions from 1,000 to 0 because your open file limit is 256
+INFO:electrumx:logging level: INFO
+INFO:Controller:Python version: 3.10.1 (v3.10.1:2cd268a3a9, Dec  6 2021, 14:28:59) [Clang 13.0.0 (clang-1300.0.29.3)]
+INFO:Controller:software version: ElectrumX 1.16.0
+INFO:Controller:aiorpcX version: 0.22.1
+INFO:Controller:supported protocol versions: 1.4-1.4.3
+INFO:Controller:event loop policy: None
+INFO:Controller:reorg limit is 200 blocks
+INFO:Daemon:daemon #1 at 3.113.237.222:8332/ (current)
+INFO:DB:switching current directory to /Users/oker/scf/gopath/src/github.com/ItsFunny/atomicals-electrumx/data
+INFO:DB:using leveldb for DB backend
+ERROR:Daemon:connection problem - check your daemon is running.  Retrying occasionally...
+ERROR:Daemon:connection problem - check your daemon is running.  Retrying occasionally...
+ERROR:Daemon:connection problem - check your daemon is running.  Retrying occasionally...

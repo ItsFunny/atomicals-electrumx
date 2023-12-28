@@ -83,7 +83,8 @@ def make_point_dict(tx_id, inscription_context):
 
 
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
-    print(f'add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
+    print(
+        f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
     vin = []
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
@@ -113,7 +114,6 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
 
 
 def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
-    print(f'----- add_dmt_trace -----')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "address": get_address_from_script(pubkey_script),
@@ -126,7 +126,6 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
 
 
 def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, pubkey_script):
-    print(f'----- add_ft_trace -----')
     inscription_context_dict = {
         "args": operations_found_at_inputs["args"],
         "address": get_address_from_script(pubkey_script),
@@ -141,16 +140,22 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
 
+def get_from_map(m, key):
+    if key in m:
+        return m[k]
+    # print(f'----- get from map error key {key} {m}')
+    return ""
+
+
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
-    print(f'----- add_dft_trace -----')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "args": operations_found_at_inputs["args"],
-        "desc": operations_found_at_inputs["desc"],
-        "name": operations_found_at_inputs["name"],
-        "image": operations_found_at_inputs["image"],
-        "legal": operations_found_at_inputs["legal"],
-        "links": operations_found_at_inputs["links"],
+        "desc": get_from_map(operations_found_at_inputs, "desc"),
+        "name": get_from_map(operations_found_at_inputs, "name"),
+        "image": get_from_map(operations_found_at_inputs, "image"),
+        "legal": get_from_map(operations_found_at_inputs, "legal"),
+        "links": get_from_map(operations_found_at_inputs,"links"),
     }
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
@@ -161,7 +166,7 @@ def flush_trace(traces, general_data_cache, height):
     data = dumps(traces)
     put_general_data(trace_key, data)
     if len(data) != 1:
-        print(f'----- flush_trace {height} {len(data)}')
+        print(f'scf----- flush_trace {height} {len(data)}')
     traces.clear()
 
 

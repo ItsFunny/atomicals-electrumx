@@ -90,10 +90,10 @@ class Coin:
     WIF_BYTE = bytes.fromhex("80")
     ENCODE_CHECK = Base58.encode_check
     DECODE_CHECK = Base58.decode_check
-    # GENESIS_HASH = ('000000000019d6689c085ae165831e93'
-    #                 '4ff763ae46a2a6c172b3f1b60a8ce26f')
+    GENESIS_HASH = ('000000000019d6689c085ae165831e93'
+                    '4ff763ae46a2a6c172b3f1b60a8ce26f')
     # TODO:delete
-    GENESIS_HASH = ('0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206')
+    # GENESIS_HASH = ('0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206')
     GENESIS_ACTIVATION = 100_000_000
 
     MEMPOOL_HISTOGRAM_REFRESH_SECS = 500
@@ -664,7 +664,7 @@ class Bitcoin(BitcoinMixin, Coin):
         'v7o2hkemnt677k3jxcbosmjjxw3p5khjyu7jwv7orfy6rwtkizbshwqd.onion t57001'
         'nf365b5sbzk5j4jreimskffwnfpka7qtamyni5doohoom3g63o5tldad.onion t'
     ]
-    ATOMICALS_ACTIVATION_HEIGHT = 808080
+    ATOMICALS_ACTIVATION_HEIGHT = 1
     ATOMICALS_ACTIVATION_HEIGHT_DMINT = 819181 
     ATOMICALS_ACTIVATION_HEIGHT_COMMITZ = 822800
 
