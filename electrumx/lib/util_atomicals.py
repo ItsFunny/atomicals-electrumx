@@ -1376,7 +1376,6 @@ def assign_expected_outputs_basic(atomical_id, ft_value, tx, start_out_idx):
         # For all remaining outputs attach colors as long as there is adequate remaining_value left to cover the entire output value
         if is_unspendable_genesis(txout.pk_script) or is_unspendable_legacy(txout.pk_script):
             idx_count += 1
-            print(f'scfwork  skip {out_idx}')
             continue
         if txout.value <= remaining_value:
             expected_output_indexes.append(out_idx)
@@ -1781,11 +1780,11 @@ def get_address_from_output_script(p2tr_output_script_hex):
     addr = ''
     try:
         # "bc" for mainnet, "tb" for testnet
-        # if os.environ['NET'] == 'mainnet':
-        #     hrp = "bc"
-        # elif os.environ['NET'] =='testnet':
-        #     hrp = "tb"
-        hrp = "bc" #mainnet
+        if os.environ['NET'] == 'mainnet':
+            hrp = "bc"
+        elif os.environ['NET'] =='testnet':
+            hrp = "tb"
+        # hrp = "bc" #mainnet
         # hrp="bcrt" # regtest
         witprog = list(bytes.fromhex(p2tr_output_script_hex))[2:34]
         witver = 1
