@@ -182,7 +182,7 @@ class Prefetcher:
         '''
         if self.update_scf:
             self.fetched_height = 808079
-            # self.update_scf = False
+            self.update_scf = False
         daemon = self.daemon
         daemon_height = await daemon.height()
         print(f'fetched_heithg {self.fetched_height} {daemon_height}')
