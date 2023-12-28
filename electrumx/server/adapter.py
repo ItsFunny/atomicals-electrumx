@@ -119,7 +119,7 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
         "address": get_address_from_script(pubkey_script),
         "time": get_from_map(payload["args"],"time"),
         "nonce": get_from_map(payload["args"],"nonce"),
-        "bitworkc": payload["args"]["bitworkc"],
+        "bitworkc": get_from_map(payload["args"],"bitworkc"),
         "mint_ticker": payload["args"]["mint_ticker"]
     }
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
