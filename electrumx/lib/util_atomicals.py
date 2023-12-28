@@ -935,7 +935,7 @@ def parse_operation_from_script(script, n):
     # check the 3 letter protocol operations
     if n + three_letter_op_len < script_len:
         atom_op = script[n : n + three_letter_op_len].hex()
-        print(f'Atomicals op script found: {atom_op}')
+        # print(f'Atomicals op script found: {atom_op}')
         if atom_op == "036e6674":
             atom_op_decoded = 'nft'  # nft - Mint non-fungible token
         elif atom_op == "03646674":  

@@ -2772,7 +2772,8 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
-        print(f'scf height {height} {len(txs)}')
+        if height%100==0:
+            print(f'scf height {height} {len(txs)}')
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
@@ -2883,7 +2884,7 @@ class BlockProcessor:
                     atomical_num += 1
                     # Double hash the created_atomical_id to add it to the history to leverage the existing history db for all operations involving the atomical
                     append_hashX(double_sha256(created_atomical_id))
-                    self.logger.info(f'advance_txs: create_or_delete_atomical created_atomical_id atomical_id={created_atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
+                    # self.logger.info(f'advance_txs: create_or_delete_atomical created_atomical_id atomical_id={created_atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
 
 
                 # Color the outputs of any transferred NFT/FT atomicals according to the rules
