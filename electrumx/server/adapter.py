@@ -89,7 +89,7 @@ def make_point_dict(tx_id, inscription_context):
     return {
         "protocol_name": "arc-20",
         "inscription": "",
-        "inscription_context": json.dumps(inscription_context, ensure_ascii=False),
+        "inscription_context": json.dumps(inscription_context),
         "btc_txid": hash_to_hex_str(tx_id),
         "btc_fee": ""
     }
@@ -136,7 +136,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             })
         vin.append({
             "input_index": txin_index,
-            "prev_hash": tx.inputs[txin_index].prev_hash,
+            "prev_hash": hash_to_hex_str(tx.inputs[txin_index].prev_hash),
             "atomicals": a_list
         })
 
