@@ -60,15 +60,18 @@ def get_block_traces(db, height, page, limit):
         return data
     return None
 
-
+def little_endian_to_big_endian(little_endian):
+    # 将小端序的字节数组反转
+    big_endian = little_endian[::-1]
+    return big_endian
 def parse_block_header(block_header_data):
     version = struct.unpack('<I', block_header_data[:4])[0]
     prev_block_hash = block_header_data[4:36].hex()
     merkle_root = block_header_data[36:68].hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
     print(f'scf fuck  version {version}')
-    print(f'scf fuck  prev_block_hash {block_header_data[4:36]}')
-    print(f'scf fuck  merkle_root {block_header_data[36:68]}')
+    print(f'scf fuck  prev_block_hash {little_endian_to_big_endian(block_header_data[4:36]).hex()}')
+    print(f'scf fuck  merkle_root {little_endian_to_big_endian(block_header_data[36:68]).hex()}')
     print(f'scf fuck  timestamp {timestamp}')
     return version, prev_block_hash, merkle_root, timestamp
 
