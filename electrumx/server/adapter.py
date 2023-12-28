@@ -47,8 +47,9 @@ def get_block_traces(db, height, page, limit):
         txs = txs[start:end]
         data = {
             "page": page,
-            "block_height": height,
+            "count":len(txs),
             "sum": len,
+            "block_height": height,
             "block_hash": block_hash,
             "prev_block_hash": prev_block_hash,
             "block_time": ts,
@@ -84,9 +85,10 @@ def handle_value(value):
 def make_point_dict(tx_id, inscription_context):
     return {
         "protocol_name": "arc-20",
-        "btc_txid": hash_to_hex_str(tx_id),
         "inscription": "",
-        "inscription_context": json.dumps(inscription_context)
+        "inscription_context": json.dumps(inscription_context),
+        "btc_txid": hash_to_hex_str(tx_id),
+        "btc_fee":""
     }
 
 
