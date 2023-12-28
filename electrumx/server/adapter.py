@@ -79,11 +79,10 @@ def parse_block_header(block_header_data):
 
 
 def handle_value(value):
-    hashX = value[:HASHX_LEN]
-    scripthash = value[HASHX_LEN: HASHX_LEN + SCRIPTHASH_LEN]
+
     value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
     vv, = unpack_le_uint64(value_sats)
-    return hashX, scripthash, vv
+    return  vv
 
 
 def make_point_dict(tx_id, inscription_context):
@@ -98,31 +97,15 @@ def make_point_dict(tx_id, inscription_context):
 
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     print(
-        f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{atomicals_spent_at_inputs}')
+        f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{len(atomicals_spent_at_inputs)}')
 
-    vin_old = []
-    for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
-        for atomic in atomicals_entry_list:
-            atomical_id = atomic["atomical_id"]
-            script = atomic["script"]
-            _, _, value = handle_value(atomic["data"])
-            vin_old.append({
-                    "atomical_id": location_id_bytes_to_compact(atomical_id),
-                    "address": script,
-                    "value": value
-                })
-
-    vin = []
+    flattened_vin = []
     vin_dict = {}
-
-    print_log = False
-
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
-
             atomical_id = atomic["atomical_id"]
             script = atomic["script"]
-            _, _, value = handle_value(atomic["data"])
+            value = handle_value(atomic["data"])
 
             if atomical_id not in vin_dict:
                 vin_dict[atomical_id] = {}
@@ -131,31 +114,44 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
                 vin_dict[atomical_id][script] = value
             else:
                 vin_dict[atomical_id][script] = vin_dict[atomical_id][script] + value
-                print_log = True
 
     for atomical_id, address_list in vin_dict.items():
         for address, value in address_list.items():
-            vin.append({
+            flattened_vin.append({
                 "atomical_id": location_id_bytes_to_compact(atomical_id),
                 "address": address,
                 "value": value
             })
 
-    if print_log:
-        print(f'scf bingo old {vin_old}')
-        print(f'scf bingo new {vin}')
+    vin = []
+    for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
+        a_list = []
+        for atomic in atomicals_entry_list:
+            atomical_id = atomic["atomical_id"]
+            value = handle_value(atomic["data"])
+            for v in value:
+                a_list.append({
+                    "atomical_id": location_id_bytes_to_compact(atomical_id),
+                    "address": atomic["script"],
+                    "value": v
+                })
+        vin.append({
+            "input_index": txin_index,
+            "prev_hash": tx.inputs[txin_index].prev_hash,
+            "atomicals": a_list
+        })
 
     vout = []
     for idx, txout in enumerate(tx.outputs):
-        script = get_address_from_script(txout.pk_script)
         value = txout.value
         vout.append({
             "output_index": idx,
-            "address": script,
+            "address": get_address_from_script(txout.pk_script),
             "value": value
         })
     trace_cache.append(make_point_dict(tx_hash, {
         "tx_id": hash_to_hex_str(tx_hash),
+        "flattened_vin": flattened_vin,
         "vin": vin,
         "vout": vout
     }))
