@@ -49,11 +49,6 @@ def get_block_traces(db, height, page, limit):
             end = len
         txs = txs[start:end]
 
-        for t in txs:
-            print(f'scfzzzbefore {t["inscription_context"]}')
-            t["inscription_context"] = t["inscription_context"].replace("\\", "")
-            print(f'scfzzzend {t["inscription_context"]}')
-        print(f'scfzzzz---- {txs[0]["inscription_context"]}')
         data = {
             "page": page,
             "count": txs.__len__(),
