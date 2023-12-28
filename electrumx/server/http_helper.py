@@ -27,13 +27,13 @@ def zero_indexer(height):
             "msg": "success",
             "data": block_data
         }
-        ret = json.dumps(ret,ensure_ascii=False)
+        ret = json.dumps(ret)
         return ret
     ret = {
         "code": 1,
         "msg": "block not found",
     }
-    ret = json.dumps(ret,ensure_ascii=False)
+    ret = json.dumps(ret)
     return ret
 
 
