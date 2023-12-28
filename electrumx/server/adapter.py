@@ -125,7 +125,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     for atomical_id ,address_list in vin_dict.items():
         for address,value in address_list.items():
             vin.append({
-                "atomical_id":location_id_bytes_to_compact(atomical_id)
+                "atomical_id":location_id_bytes_to_compact(atomical_id),
                 "address":address,
                 "value":value
             })
@@ -133,7 +133,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
     if print_log:
         print(f'scf bingo tx_hash {little_endian_to_big_endian(tx_hash).hex()} {atomicals_spent_at_inputs}')
         print(f'scf bingo tx_hash {vin}')
-        
+
     vout = []
     for idx, txout in enumerate(tx.outputs):
         script = get_address_from_script(txout.pk_script)
