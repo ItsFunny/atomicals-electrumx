@@ -86,7 +86,7 @@ def make_point_dict(tx_id, inscription_context):
     return {
         "protocol_name": "arc-20",
         "inscription": "",
-        "inscription_context": json.dumps(inscription_context),
+        "inscription_context": json.dumps(inscription_context,ensure_ascii=False),
         "btc_txid": hash_to_hex_str(tx_id),
         "btc_fee":""
     }
