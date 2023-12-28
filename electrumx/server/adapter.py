@@ -173,7 +173,7 @@ def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
 def flush_trace(traces, general_data_cache, height):
     trace_key = b'okx' + pack_le_uint64(height)
     put_general_data = general_data_cache.__setitem__
-    data = dumps(traces,indent=None)
+    data = dumps(traces)
     put_general_data(trace_key, data)
     if len(data) != 1:
         print(f'scf----- flush_trace {height} {len(traces)}')
