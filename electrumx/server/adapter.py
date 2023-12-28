@@ -12,6 +12,7 @@ from electrumx.lib.util_atomicals import location_id_bytes_to_compact, get_addre
 
 import hashlib
 
+
 class EntryPoint:
     tx_id: str
     inscription: str
@@ -35,19 +36,23 @@ def get_block_traces(db, height, page, limit):
         raw_data = asyncio.run(db.raw_header(height))
     except FileNotFoundError:
         return None
-    version, prev_block_hash, _, ts,block_hash = parse_block_header(raw_data)
+    version, prev_block_hash, _, ts, block_hash = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
+
+
         len = txs.__len__()
         start = (page - 1) * limit
         end = page * limit
         if end > len:
             end = len
         txs = txs[start:end]
+        for t in txs:
+            t["inscription_context"] = t["inscription_context"].replace("\\", "")
         data = {
             "page": page,
-            "count":txs.__len__(),
+            "count": txs.__len__(),
             "sum": len,
             "block_height": height,
             "block_hash": block_hash,
@@ -58,20 +63,23 @@ def get_block_traces(db, height, page, limit):
         return data
     return None
 
+
 def little_endian_to_big_endian(little_endian):
     # 将小端序的字节数组反转
     big_endian = little_endian[::-1]
     return big_endian
+
+
 def parse_block_header(block_header_data):
     version = struct.unpack('<I', block_header_data[:4])[0]
     prev_block_hash = little_endian_to_big_endian(block_header_data[4:36]).hex()
     merkle_root = little_endian_to_big_endian(block_header_data[36:68]).hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
 
-    sha_hash1=hashlib.sha256(block_header_data).digest()
-    sha256_hash2=hashlib.sha256(sha_hash1).digest()
+    sha_hash1 = hashlib.sha256(block_header_data).digest()
+    sha256_hash2 = hashlib.sha256(sha_hash1).digest()
 
-    return version, prev_block_hash, merkle_root, timestamp,sha256_hash2[::-1].hex()
+    return version, prev_block_hash, merkle_root, timestamp, sha256_hash2[::-1].hex()
 
 
 def handle_value(value):
@@ -86,9 +94,9 @@ def make_point_dict(tx_id, inscription_context):
     return {
         "protocol_name": "arc-20",
         "inscription": "",
-        "inscription_context": json.dumps(inscription_context,ensure_ascii=False),
+        "inscription_context": json.dumps(inscription_context, ensure_ascii=False),
         "btc_txid": hash_to_hex_str(tx_id),
-        "btc_fee":""
+        "btc_fee": ""
     }
 
 
@@ -127,9 +135,9 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "address": get_address_from_script(pubkey_script),
-        "time": get_from_map(payload["args"],"time"),
-        "nonce": get_from_map(payload["args"],"nonce"),
-        "bitworkc": get_from_map(payload["args"],"bitworkc"),
+        "time": get_from_map(payload["args"], "time"),
+        "nonce": get_from_map(payload["args"], "nonce"),
+        "bitworkc": get_from_map(payload["args"], "bitworkc"),
         "mint_ticker": payload["args"]["mint_ticker"]
     }
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
@@ -159,7 +167,7 @@ def get_from_map(m, key):
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
     print(f'scf---detail')
-    for k,v in operations_found_at_inputs.items():
+    for k, v in operations_found_at_inputs.items():
         print(f'scf k {k} ')
     inscription_context_dict = {
         "is_deploy": is_deploy,
@@ -168,7 +176,7 @@ def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
         "name": get_from_map(operations_found_at_inputs, "name"),
         "image": get_from_map(operations_found_at_inputs, "image"),
         "legal": get_from_map(operations_found_at_inputs, "legal"),
-        "links": get_from_map(operations_found_at_inputs,"links"),
+        "links": get_from_map(operations_found_at_inputs, "links"),
     }
     trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
 
