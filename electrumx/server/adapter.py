@@ -47,7 +47,7 @@ def get_block_traces(db, height, page, limit):
         txs = txs[start:end]
         data = {
             "page": page,
-            "count":len(txs),
+            "count":txs.__len__(),
             "sum": len,
             "block_height": height,
             "block_hash": block_hash,
