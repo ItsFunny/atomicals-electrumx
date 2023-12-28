@@ -32,7 +32,7 @@ def zero_indexer(height):
         "code": 1,
         "msg": "block not found",
     }
-    ret=dumps(ret)
+    ret=json.dumps(ret)
     return ret
 
 def run_http():
