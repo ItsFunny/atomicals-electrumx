@@ -117,7 +117,7 @@ def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "address": get_address_from_script(pubkey_script),
-        "time": payload["args"]["time"],
+        "time": get_from_map(payload["args"],"time"),
         "nonce": payload["args"]["nonce"],
         "bitworkc": payload["args"]["bitworkc"],
         "mint_ticker": payload["args"]["mint_ticker"]
