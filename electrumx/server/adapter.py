@@ -166,7 +166,7 @@ def flush_trace(traces, general_data_cache, height):
     data = dumps(traces)
     put_general_data(trace_key, data)
     if len(data) != 1:
-        print(f'scf----- flush_trace {height} {len(data)}')
+        print(f'scf----- flush_trace {height} {len(traces)}')
     traces.clear()
 
 
