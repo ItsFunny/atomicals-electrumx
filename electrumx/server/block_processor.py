@@ -95,7 +95,7 @@ TX_OUTPUT_IDX_LEN = 4
 SANITY_CHECK_ATOMICAL = 'd3805673d1080bd6f527b3153dd5f8f7584731dec04b332e6285761b5cdbf171i0'
 SANITY_CHECK_ATOMICAL_MAX_SUPPLY = 2000
 
-SCF=True
+
 
 class Prefetcher:
     '''Prefetches blocks (in the forward direction only).'''
@@ -125,6 +125,7 @@ class Prefetcher:
         # This makes the first fetch be 10 blocks
         self.ave_size = self.min_cache_size // 10
         self.polling_delay = polling_delay_secs
+        self.update_scf=True
 
     async def main_loop(self, bp_height):
         '''Loop forever polling for more blocks.'''
@@ -179,9 +180,9 @@ class Prefetcher:
 
         Repeats until the queue is full or caught up.
         '''
-        if SCF:
+        if self.update_scf:
             self.fetched_height = 808080
-            SCF=False
+            self.update_scf = False
         daemon = self.daemon
         daemon_height = await daemon.height()
         print(f'fetched_heithg {self.fetched_height} {daemon_height}')
@@ -1131,7 +1132,7 @@ class BlockProcessor:
             return False
             # Also check that there is no candidates already committed earlier than the current one
         # self.logger.info(
-            # f'create_or_delete_realm_entry_if_requested mint_info={mint_info} request_realm={request_realm}')
+        # f'create_or_delete_realm_entry_if_requested mint_info={mint_info} request_realm={request_realm}')
         status, atomical_id, candidates = self.get_effective_realm(request_realm, height)
         for candidate in candidates:
             if candidate['tx_num'] < mint_info['commit_tx_num']:
@@ -1721,7 +1722,7 @@ class BlockProcessor:
             expected_output_index = expected_output_index_incrementing
             if expected_output_index_incrementing >= len(tx.outputs) or is_unspendable_genesis(
                     tx.outputs[expected_output_index_incrementing].pk_script) or is_unspendable_legacy(
-                    tx.outputs[expected_output_index_incrementing].pk_script):
+                tx.outputs[expected_output_index_incrementing].pk_script):
                 expected_output_index = 0
             output_idx_le = pack_le_uint32(expected_output_index)
             location = tx_hash + output_idx_le
@@ -1755,7 +1756,7 @@ class BlockProcessor:
                     expected_output_index = next_output_idx
                     if expected_output_index >= len(tx.outputs) or is_unspendable_genesis(
                             tx.outputs[expected_output_index].pk_script) or is_unspendable_legacy(
-                            tx.outputs[expected_output_index].pk_script):
+                        tx.outputs[expected_output_index].pk_script):
                         expected_output_index = 0
                     # Also keep them at the 0'th index if the split command was used
                     if is_split_operation(operations_found_at_inputs):
@@ -1905,7 +1906,7 @@ class BlockProcessor:
         # If there was an event, then save it for the first FT only
         if operations_found_at_inputs and operations_found_at_inputs.get(
                 'op') == 'evt' and operations_found_at_inputs.get('input_index') == 0 and atomicals_list_result and len(
-                atomicals_list_result) > 0 and live_run:
+            atomicals_list_result) > 0 and live_run:
             # Only allow an event to be posted to the first FT in the list, sorted
             atomical_id_of_first_ft = atomicals_list_result[0]['atomical_id']
             output_idx_le = pack_le_uint32(0)  # Always save to 0th location
