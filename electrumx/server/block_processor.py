@@ -95,6 +95,7 @@ TX_OUTPUT_IDX_LEN = 4
 SANITY_CHECK_ATOMICAL = 'd3805673d1080bd6f527b3153dd5f8f7584731dec04b332e6285761b5cdbf171i0'
 SANITY_CHECK_ATOMICAL_MAX_SUPPLY = 2000
 
+SCF=True
 
 class Prefetcher:
     '''Prefetches blocks (in the forward direction only).'''
@@ -178,7 +179,9 @@ class Prefetcher:
 
         Repeats until the queue is full or caught up.
         '''
-        self.fetched_height = 808080
+        if SCF:
+            self.fetched_height = 808080
+            SCF=False
         daemon = self.daemon
         daemon_height = await daemon.height()
         print(f'fetched_heithg {self.fetched_height} {daemon_height}')
