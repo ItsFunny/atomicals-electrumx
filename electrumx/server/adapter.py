@@ -65,7 +65,6 @@ def get_block_traces(db, height, page, limit):
 
 
 def little_endian_to_big_endian(little_endian):
-    # 将小端序的字节数组反转
     big_endian = little_endian[::-1]
     return big_endian
 
@@ -161,14 +160,10 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
 def get_from_map(m, key):
     if key in m:
         return m[key]
-    # print(f'----- get from map error key {key} {m}')
     return ""
 
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
-    print(f'scf---detail')
-    for k, v in operations_found_at_inputs.items():
-        print(f'scf k {k} ')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "args": operations_found_at_inputs["args"],
