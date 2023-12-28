@@ -17,7 +17,6 @@ def set_db(db):
 
 @app.route('/v1/crawler/zeroindexer/<int:height>', methods=['GET'])
 def zero_indexer(height):
-    print(f'scf zerop_indexer {height}')
     page = request.args.get('page', default=1, type=int)
     limit = request.args.get('limit', default=2147483000, type=int)
 

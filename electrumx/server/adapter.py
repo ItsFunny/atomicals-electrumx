@@ -35,9 +35,8 @@ def get_block_traces(db, height, page, limit):
     try:
         raw_data = asyncio.run(db.raw_header(height))
     except Exception as e:
-        print(f'get_block_traces err: {e}')
         return None
-    version, prev_block_hash, _, ts, block_hash = parse_block_header(raw_data)
+    version, prev_block_hash,  ts, block_hash = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
@@ -71,13 +70,12 @@ def little_endian_to_big_endian(little_endian):
 def parse_block_header(block_header_data):
     version = struct.unpack('<I', block_header_data[:4])[0]
     prev_block_hash = little_endian_to_big_endian(block_header_data[4:36]).hex()
-    merkle_root = little_endian_to_big_endian(block_header_data[36:68]).hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
 
     sha_hash1 = hashlib.sha256(block_header_data).digest()
     sha256_hash2 = hashlib.sha256(sha_hash1).digest()
 
-    return version, prev_block_hash, merkle_root, timestamp, sha256_hash2[::-1].hex()
+    return version, prev_block_hash, timestamp, sha256_hash2[::-1].hex()
 
 
 def handle_value(value):
