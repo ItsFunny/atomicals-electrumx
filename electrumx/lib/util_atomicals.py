@@ -1785,7 +1785,8 @@ def get_address_from_output_script(p2tr_output_script_hex):
         #     hrp = "bc"
         # elif os.environ['NET'] =='testnet':
         #     hrp = "tb"
-        hrp="bcrt" # regtest
+        hrp = "bc" #mainnet
+        # hrp="bcrt" # regtest
         witprog = list(bytes.fromhex(p2tr_output_script_hex))[2:34]
         witver = 1
         addr = encode(hrp, witver, witprog)
