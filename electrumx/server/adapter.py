@@ -82,7 +82,7 @@ def handle_value(value):
     hashX = value[:HASHX_LEN]
     scripthash = value[HASHX_LEN: HASHX_LEN + SCRIPTHASH_LEN]
     value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
-    vv,_ = unpack_le_uint64(value_sats)
+    vv, = unpack_le_uint64(value_sats)
     return hashX, scripthash, vv
 
 
