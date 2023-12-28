@@ -82,7 +82,7 @@ def handle_value(value):
 
 def make_point_dict(tx_id, inscription_context):
     return {
-        "protocol_name": "arc20",
+        "protocol_name": "arc-20",
         "btc_txid": hash_to_hex_str(tx_id),
         "inscription": "",
         "inscription_context": inscription_context
