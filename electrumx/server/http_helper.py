@@ -24,9 +24,9 @@ def zero_indexer(height):
         ret={
             "code": 0,
             "msg": "success",
-            "data": dumps(block_data)
+            "data": json.dumps(block_data)
         }
-        ret=dumps(ret)
+        ret=json.dumps(ret)
         return ret
     ret={
         "code": 1,
