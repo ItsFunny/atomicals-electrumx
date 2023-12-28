@@ -67,8 +67,8 @@ def parse_block_header(block_header_data):
     merkle_root = block_header_data[36:68].hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
     print(f'scf fuck  version {version}')
-    print(f'scf fuck  prev_block_hash {prev_block_hash}')
-    print(f'scf fuck  merkle_root {merkle_root}')
+    print(f'scf fuck  prev_block_hash {block_header_data[4:36]}')
+    print(f'scf fuck  merkle_root {block_header_data[36:68]}')
     print(f'scf fuck  timestamp {timestamp}')
     return version, prev_block_hash, merkle_root, timestamp
 
