@@ -1880,8 +1880,10 @@ class BlockProcessor:
         self.logger.info(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} start check')
         atomical_id_to_expected_outs_map, cleanly_assigned, atomicals_list_result = calculate_outputs_to_color_for_ft_atomical_ids(
             ft_atomicals, tx_hash, tx, sort_fifo)
+
         if not atomical_id_to_expected_outs_map:
             return None
+        print(f'scfwork  color_ft_atomicals_regular_perform {atomical_id_to_expected_outs_map} {cleanly_assigned}' )
         self.logger.info(
             f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} return ft_atomicals={ft_atomicals} atomical_id_to_expected_outs_map={atomical_id_to_expected_outs_map}')
         sanity_check_sums = {}

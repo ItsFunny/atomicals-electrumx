@@ -1376,6 +1376,7 @@ def assign_expected_outputs_basic(atomical_id, ft_value, tx, start_out_idx):
         # For all remaining outputs attach colors as long as there is adequate remaining_value left to cover the entire output value
         if is_unspendable_genesis(txout.pk_script) or is_unspendable_legacy(txout.pk_script):
             idx_count += 1
+            print(f'scfwork  skip {out_idx}')
             continue
         if txout.value <= remaining_value:
             expected_output_indexes.append(out_idx)
