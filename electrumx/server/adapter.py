@@ -34,7 +34,8 @@ def get_block_traces(db, height, page, limit):
     key = b'okx' + electrumx.lib.util.pack_le_uint64(height)
     try:
         raw_data = asyncio.run(db.raw_header(height))
-    except FileNotFoundError:
+    except Exception as e:
+        print(f'get_block_traces err: {e}')
         return None
     version, prev_block_hash, _, ts, block_hash = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
