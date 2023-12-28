@@ -808,7 +808,7 @@ class BlockProcessor:
 
     # Save atomicals UTXO to cache that will be flushed to db
     def put_atomicals_utxo(self, location_id, atomical_id, value): 
-        self.logger.info(f'put_atomicals_utxo: atomical_id={location_id_bytes_to_compact(atomical_id)}, location_id={location_id_bytes_to_compact(location_id)}, value={value.hex()}')
+        # self.logger.info(f'put_atomicals_utxo: atomical_id={location_id_bytes_to_compact(atomical_id)}, location_id={location_id_bytes_to_compact(location_id)}, value={value.hex()}')
         if self.atomicals_utxo_cache.get(location_id) == None: 
             self.atomicals_utxo_cache[location_id] = {}
         # Use a tombstone to mark deleted because even if it's removed we must
@@ -885,7 +885,7 @@ class BlockProcessor:
             # Only do the db delete if this was a live run
             if live_run:
                 self.delete_general_data(b'a' + atomical_id + location_id)
-                self.logger.info(f'spend_atomicals_utxo: utxo_db. location_id={location_id_bytes_to_compact(location_id)} atomical_id={location_id_bytes_to_compact(atomical_id)}, value={atomical_i_db_value}')
+                # self.logger.info(f'spend_atomicals_utxo: utxo_db. location_id={location_id_bytes_to_compact(location_id)} atomical_id={location_id_bytes_to_compact(atomical_id)}, value={atomical_i_db_value}')
 
             location_key=b'po' + location_id
             script=get_script_from_by_locatin_id(location_key,self.general_data_cache,self.db)
@@ -1021,7 +1021,7 @@ class BlockProcessor:
         tx_numb = pack_le_uint64(mint_info['reveal_location_tx_num'])[:TXNUM_LEN]
         self.put_atomicals_utxo(mint_info['reveal_location'], mint_info['id'], mint_info['reveal_location_hashX'] + mint_info['reveal_location_scripthash'] + value_sats + pack_le_uint16(0) + tx_numb)
         atomical_id = mint_info['id']
-        self.logger.info(f'validate_and_create_nft_mint_utxo: atomical_id={location_id_bytes_to_compact(atomical_id)}, tx_hash={hash_to_hex_str(tx_hash)}, mint_info={mint_info}')
+        # self.logger.info(f'validate_and_create_nft_mint_utxo: atomical_id={location_id_bytes_to_compact(atomical_id)}, tx_hash={hash_to_hex_str(tx_hash)}, mint_info={mint_info}')
         return True
     
     # Validate the parameters for a FT
@@ -1053,7 +1053,7 @@ class BlockProcessor:
         if not is_valid_realm_string_name(request_realm):
             return False 
         # Also check that there is no candidates already committed earlier than the current one
-        self.logger.info(f'create_or_delete_realm_entry_if_requested mint_info={mint_info} request_realm={request_realm}')
+        # self.logger.info(f'create_or_delete_realm_entry_if_requested mint_info={mint_info} request_realm={request_realm}')
         status, atomical_id, candidates = self.get_effective_realm(request_realm, height)
         for candidate in candidates:
             if candidate['tx_num'] < mint_info['commit_tx_num']:
@@ -1421,7 +1421,7 @@ class BlockProcessor:
 
             if not Delete:
                 if not self.validate_and_create_nft_mint_utxo(mint_info, txout, height, tx_hash):
-                    self.logger.info(f'create_or_delete_atomical: validate_and_create_nft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
+                    # self.logger.info(f'create_or_delete_atomical: validate_and_create_nft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
 
         elif valid_create_op_type == 'FT':
@@ -2836,7 +2836,7 @@ class BlockProcessor:
                         atomicals_spent_at_inputs[txin_index] = atomicals_transferred_list
                         for atomical_spent in atomicals_transferred_list:
                             atomical_id = atomical_spent['atomical_id']
-                            self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
+                            # self.logger.info(f'atomicals_transferred_list - tx_hash={hash_to_hex_str(tx_hash)}, txin_index={txin_index}, txin_hash={hash_to_hex_str(txin.prev_hash)}, txin_previdx={txin.prev_idx}, atomical_id_spent={atomical_id.hex()}')
                     # Get the undo format for the spent atomicals
                     reformatted_for_undo_entries = []
                     for atomicals_entry in atomicals_transferred_list:
