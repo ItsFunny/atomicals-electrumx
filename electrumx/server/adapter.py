@@ -9,6 +9,7 @@ from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
 from electrumx.lib.util_atomicals import location_id_bytes_to_compact, get_address_from_output_script
 
+import hashlib
 
 class EntryPoint:
     tx_id: str
@@ -33,7 +34,7 @@ def get_block_traces(db, height, page, limit):
         raw_data = asyncio.run(db.raw_header(height))
     except FileNotFoundError:
         return None
-    version, prev_block_hash, root, ts = parse_block_header(raw_data)
+    version, prev_block_hash, _, ts,block_hash = parse_block_header(raw_data)
     value = db.utxo_db.get(key)
     if value:
         txs = loads(value)
@@ -47,7 +48,7 @@ def get_block_traces(db, height, page, limit):
             "page": page,
             "block_height": height,
             "sum": len,
-            "block_hash": root,
+            "block_hash": block_hash,
             "prev_block_hash": prev_block_hash,
             "block_time": ts,
             "txs": txs,
@@ -64,7 +65,11 @@ def parse_block_header(block_header_data):
     prev_block_hash = little_endian_to_big_endian(block_header_data[4:36]).hex()
     merkle_root = little_endian_to_big_endian(block_header_data[36:68]).hex()
     timestamp = struct.unpack('<I', block_header_data[68:72])[0]
-    return version, prev_block_hash, merkle_root, timestamp
+
+    sha_hash1=hashlib.sha256(block_header_data).digest()
+    sha256_hash2=hashlib.sha256(sha_hash1).digest()
+
+    return version, prev_block_hash, merkle_root, timestamp,sha256_hash2[::-1].hex()
 
 
 def handle_value(value):
