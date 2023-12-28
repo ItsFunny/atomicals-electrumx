@@ -1503,9 +1503,9 @@ class BlockProcessor:
             op_name = 'evt'
             main_key_prefix = b'evt'
         put_general_data = self.general_data_cache.__setitem__
-        self.logger.info(f'put_or_delete_state_updates: operations_found_at_inputs={operations_found_at_inputs}')
+        # self.logger.info(f'put_or_delete_state_updates: operations_found_at_inputs={operations_found_at_inputs}')
         if operations_found_at_inputs and operations_found_at_inputs.get('op') == op_name and operations_found_at_inputs.get('input_index') == 0:
-            self.logger.info(f'put_or_delete_state_updates: op={op_name}, height={height}, atomical_id={atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
+            # self.logger.info(f'put_or_delete_state_updates: op={op_name}, height={height}, atomical_id={atomical_id.hex()}, tx_hash={hash_to_hex_str(tx_hash)}')
             tx_numb = pack_le_uint64(tx_num)[:TXNUM_LEN]
             db_key_prefix = main_key_prefix + atomical_id
             db_key_suffix = tx_numb + tx_hash + output_idx_le
@@ -2874,7 +2874,7 @@ class BlockProcessor:
                     commit_index = atomicals_operations_found_at_inputs['commit_index']
                     reveal_location_txid = atomicals_operations_found_at_inputs['reveal_location_txid']
                     reveal_location_index = atomicals_operations_found_at_inputs['reveal_location_index']
-                    self.logger.info(f'advance_txs: atomicals_operations_found_at_inputs operation_found={operation_found}, operation_input_index={operation_input_index}, size_payload={size_payload}, tx_hash={hash_to_hex_str(tx_hash)}, commit_txid={hash_to_hex_str(commit_txid)}, commit_index={commit_index}, reveal_location_txid={hash_to_hex_str(reveal_location_txid)}, reveal_location_index={reveal_location_index}')
+                    # self.logger.info(f'advance_txs: atomicals_operations_found_at_inputs operation_found={operation_found}, operation_input_index={operation_input_index}, size_payload={size_payload}, tx_hash={hash_to_hex_str(tx_hash)}, commit_txid={hash_to_hex_str(commit_txid)}, commit_index={commit_index}, reveal_location_txid={hash_to_hex_str(reveal_location_txid)}, reveal_location_index={reveal_location_index}')
                 
                 # Create NFT/FT atomicals if it is defined in the tx
                 created_atomical_id = self.create_or_delete_atomical(atomicals_operations_found_at_inputs, atomicals_spent_at_inputs, header, height, tx_num, atomical_num, tx, tx_hash, False)
@@ -2920,12 +2920,12 @@ class BlockProcessor:
                 # Create a proof of work record if there was valid proof of work attached
                 if self.create_or_delete_pow_records(tx_hash, tx_num, height, atomicals_operations_found_at_inputs):
                     has_at_least_one_valid_atomicals_operation = True
-                    self.logger.info(f'advance_txs: create_or_delete_pow_records tx_hash={hash_to_hex_str(tx_hash)}')
+                    # self.logger.info(f'advance_txs: create_or_delete_pow_records tx_hash={hash_to_hex_str(tx_hash)}')
 
                 # Concat the tx_hash if there was at least one valid atomicals operation
                 if self.is_atomicals_activated(height) and has_at_least_one_valid_atomicals_operation:
                     concatenation_of_tx_hashes_with_valid_atomical_operation += tx_hash
-                    self.logger.info(f'advance_txs: has_at_least_one_valid_atomicals_operation tx_hash={hash_to_hex_str(tx_hash)}')
+                    # self.logger.info(f'advance_txs: has_at_least_one_valid_atomicals_operation tx_hash={hash_to_hex_str(tx_hash)}')
 
                 if has_at_least_one_valid_atomicals_operation:
                     put_general_data(b'th' + pack_le_uint32(height) + pack_le_uint64(tx_num) + tx_hash, tx_hash)
