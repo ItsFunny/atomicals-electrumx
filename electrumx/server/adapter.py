@@ -1,4 +1,5 @@
 import asyncio
+import json
 import struct
 
 import electrumx.lib.util
@@ -85,7 +86,7 @@ def make_point_dict(tx_id, inscription_context):
         "protocol_name": "arc-20",
         "btc_txid": hash_to_hex_str(tx_id),
         "inscription": "",
-        "inscription_context": inscription_context
+        "inscription_context": json.dumps(inscription_context)
     }
 
 
@@ -157,7 +158,7 @@ def get_from_map(m, key):
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
     print(f'scf---detail')
     for k,v in operations_found_at_inputs.items():
-        print(f'scf k {k} {len(v)}')
+        print(f'scf k {k} ')
     inscription_context_dict = {
         "is_deploy": is_deploy,
         "args": operations_found_at_inputs["args"],
