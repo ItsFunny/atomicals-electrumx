@@ -558,7 +558,7 @@ class BlockProcessor:
                                                              operations_found_at_inputs, atomical_ids_touched, False)
         else:
             # Prepare the logic check to determine if the FTs are cleanly assigned (ie: no accidental burning loss would occur)
-            cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs,
+            _,cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs,
                                                                [], self.height, False)
         # Everything would have been cleanly assigned
         if cleanly_assigned:
@@ -1882,7 +1882,7 @@ class BlockProcessor:
             ft_atomicals, tx_hash, tx, sort_fifo)
 
         if not atomical_id_to_expected_outs_map:
-            return None
+            return None,None
         print(f'scfwork  color_ft_atomicals_regular_perform {atomical_id_to_expected_outs_map} {cleanly_assigned}' )
         self.logger.info(
             f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} return ft_atomicals={ft_atomicals} atomical_id_to_expected_outs_map={atomical_id_to_expected_outs_map}')
@@ -1921,7 +1921,7 @@ class BlockProcessor:
             self.put_or_delete_state_updates(operations_found_at_inputs, atomical_id_of_first_ft, tx_num, tx_hash,
                                              output_idx_le, height, 1, False)
 
-        return cleanly_assigned
+        return atomical_id_to_expected_outs_map,cleanly_assigned
 
     def color_ft_atomicals_regular(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs,
                                    atomical_ids_touched, height, live_run):
@@ -2022,17 +2022,20 @@ class BlockProcessor:
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
             print(f'scfadd add-transfer {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
-            add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs)
+            atomical_id_to_expected_outs_map={}
             if should_split_ft_atomicals:
                 if not self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs,
                                                      atomical_ids_touched, True):
                     self.logger.info(
                         f'color_atomicals_outputs:color_ft_atomicals_split cleanly_assigned=False tx_hash={tx_hash}')
             else:
-                if not self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs,
-                                                       atomical_ids_touched, height, True):
+                atomical_id_to_expected_outs_map,cleanly_assigned=self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs,
+                                                       atomical_ids_touched, height, True)
+                if not cleanly_assigned:
                     self.logger.info(
                         f'color_atomicals_outputs:color_ft_atomicals_regular cleanly_assigned=False tx_hash={tx_hash}')
+
+            add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,atomical_id_to_expected_outs_map)
         return atomical_ids_touched
 
     # Create or delete data that was found at the location

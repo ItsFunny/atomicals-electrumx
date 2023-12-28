@@ -79,10 +79,9 @@ def parse_block_header(block_header_data):
 
 
 def handle_value(value):
-
     value_sats = value[HASHX_LEN + SCRIPTHASH_LEN: HASHX_LEN + SCRIPTHASH_LEN + 8]
     vv, = unpack_le_uint64(value_sats)
-    return  vv
+    return vv
 
 
 def make_point_dict(tx_id, inscription_context):
@@ -95,9 +94,9 @@ def make_point_dict(tx_id, inscription_context):
     }
 
 
-def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
+def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map):
     print(
-        f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{len(atomicals_spent_at_inputs)}')
+        f' scf add_ft_transfer_trace tx_hash:{hash_to_hex_str(tx_hash)}, tx:{tx}, atomicals_spent_at_inputs:{len(atomicals_spent_at_inputs)} {atomical_id_to_expected_outs_map}')
 
     flattened_vin = []
     vin_dict = {}
@@ -130,9 +129,9 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             atomical_id = atomic["atomical_id"]
             value = handle_value(atomic["data"])
             a_list.append({
-                    "atomical_id": location_id_bytes_to_compact(atomical_id),
-                    "address": atomic["script"],
-                    "value": value
+                "atomical_id": location_id_bytes_to_compact(atomical_id),
+                "address": atomic["script"],
+                "value": value
             })
         vin.append({
             "input_index": txin_index,
@@ -140,8 +139,15 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs):
             "atomicals": a_list
         })
 
+    need_vout_index = {}
+    for k, v in atomical_id_to_expected_outs_map.items():
+        for vv in v:
+            need_vout_index[vv] = True
+
     vout = []
     for idx, txout in enumerate(tx.outputs):
+        if idx not in need_vout_index:
+            continue
         value = txout.value
         vout.append({
             "output_index": idx,
