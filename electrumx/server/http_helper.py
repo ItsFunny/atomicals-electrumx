@@ -35,7 +35,7 @@ def zero_indexer(height):
 
 def run_http():
     print("http start,port:36656")
-    app.run(debug=False, port=36656)
+    app.run(debug=False,host="0.0.0.0", port=36656)
 def start_http(db):
     set_db(db)
     flask_thread = threading.Thread(target=run_http)
