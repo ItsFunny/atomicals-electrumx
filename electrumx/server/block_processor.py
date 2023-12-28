@@ -569,7 +569,7 @@ class BlockProcessor:
         except KeyError:
             # Now check the mint cache (before flush to db)
             try:
-                self.logger.info(f'get_atomicals_id_mint_info general_data_cache atomical_id={atomical_id}')
+                # self.logger.info(f'get_atomicals_id_mint_info general_data_cache atomical_id={atomical_id}')
                 result = unpack_mint_info(self.general_data_cache[b'mi' + atomical_id])
             except KeyError:
                 mint_info_dump = self.db.get_atomical_mint_info_dump(atomical_id)
