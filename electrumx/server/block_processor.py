@@ -1832,8 +1832,6 @@ class BlockProcessor:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
             print(f'scfadd add-transfer {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
             atomical_id_to_expected_outs_map = {}
-
-            add_ft_transfer_trace(self.trace_cache,tx_hash,tx,atomicals_spent_at_inputs)
             if should_split_ft_atomicals:
                 if not self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, True):
                     self.logger.info(f'color_atomicals_outputs:color_ft_atomicals_split cleanly_assigned=False tx_hash={tx_hash}')
