@@ -455,14 +455,14 @@ class BlockProcessor:
     async def _maybe_flush(self):
         # If caught up, flush everything as client queries are
         # performed on the DB.
-        await self.flush(True)
-        # if self._caught_up_event.is_set():
-        #     await self.flush(True)
-        # elif time.monotonic() > self.next_cache_check:
-        #     flush_arg = self.check_cache_size()
-        #     if flush_arg is not None:
-        #         await self.flush(flush_arg)
-        #     self.next_cache_check = time.monotonic() + 30
+        # await self.flush(True)
+        if self._caught_up_event.is_set():
+            await self.flush(True)
+        elif time.monotonic() > self.next_cache_check:
+            flush_arg = self.check_cache_size()
+            if flush_arg is not None:
+                await self.flush(flush_arg)
+            self.next_cache_check = time.monotonic() + 30
 
     def check_cache_size(self):
         '''Flush a cache if it gets too big.'''
