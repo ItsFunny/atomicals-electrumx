@@ -14,6 +14,16 @@ app = Flask(__name__)
 def set_db(db):
     app.db = db
 
+@app.route('/v1/crawler/height/', methods=['GET'])
+def height():
+    ret = {
+        "code": 0,
+        "msg": "success",
+        "data": app.db.db_height
+    }
+    return json.dumps(ret)
+
+
 
 @app.route('/v1/crawler/zeroindexer/<int:height>', methods=['GET'])
 def zero_indexer(height):
