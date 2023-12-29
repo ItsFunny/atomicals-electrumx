@@ -87,10 +87,10 @@ def handle_value(value):
     return vv
 
 
-def make_point_dict(tx_id, inscription_context):
+def make_point_dict(tx_id, inscription, inscription_context):
     return {
         "protocol_name": "arc-20",
-        "inscription": "",
+        "inscription": json.dumps(inscription),
         "inscription_context": json.dumps(inscription_context),
         "btc_txid": hash_to_hex_str(tx_id),
         "btc_fee": ""
@@ -98,7 +98,6 @@ def make_point_dict(tx_id, inscription_context):
 
 
 def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map):
-    flattened_vin = []
     vin_dict = {}
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
@@ -114,6 +113,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
             else:
                 vin_dict[atomical_id][script] = vin_dict[atomical_id][script] + value
 
+    flattened_vin = []
     for atomical_id, address_list in vin_dict.items():
         for address, value in address_list.items():
             flattened_vin.append({
@@ -154,7 +154,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
             "address": get_address_from_script(txout.pk_script),
             "value": value
         })
-    trace_cache.append(make_point_dict(tx_hash, {
+    trace_cache.append(make_point_dict(tx_hash, {"op": "transfer"}, {
         "tx_id": hash_to_hex_str(tx_hash),
         "flattened_vin": flattened_vin,
         "vin": vin,
@@ -162,31 +162,41 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
     }))
 
 
-def add_dmt_trace(trace_cache, payload, tx_hash, is_deploy, pubkey_script):
+def add_dmt_trace(trace_cache, payload, tx_hash, pubkey_script, atomical_id, mint_amount, expected_output_index):
     inscription_context_dict = {
-        "is_deploy": is_deploy,
         "address": get_address_from_script(pubkey_script),
         "time": get_from_map(payload["args"], "time"),
         "nonce": get_from_map(payload["args"], "nonce"),
         "bitworkc": get_from_map(payload["args"], "bitworkc"),
-        "mint_ticker": payload["args"]["mint_ticker"]
+        "mint_ticker": payload["args"]["mint_ticker"],
+        "mint_amount": mint_amount,
+        "atomical_id": location_id_bytes_to_compact(atomical_id),
+        "txid": hash_to_hex_str(tx_hash),
+        "output_index": expected_output_index,
     }
-    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
+    trace_cache.append(make_point_dict(tx_hash, {
+        "op": "mint"
+    }, inscription_context_dict))
 
 
-def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, pubkey_script):
+def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, pubkey_script, atomical_id,
+                 tx_out_index):
     inscription_context_dict = {
-        "args": operations_found_at_inputs["args"],
+        "time": get_from_map(operations_found_at_inputs["args"],"time"),
+        "nonce": get_from_map(operations_found_at_inputs["args"],"nonce"),
+        "bitworkc": get_from_map(operations_found_at_inputs["args"],"bitworkc"),
+        "request_ticker": get_from_map(operations_found_at_inputs["args"],"request_ticker"),
+        "atomical_id": location_id_bytes_to_compact(atomical_id),
+        "txid": hash_to_hex_str(tx_hash),
+        "output_index": tx_out_index,
         "address": get_address_from_script(pubkey_script),
-        "desc": get_from_map(operations_found_at_inputs["desc"]),
-        "name": operations_found_at_inputs["name"],
-        "image": operations_found_at_inputs["image"],
-        "legal": operations_found_at_inputs["legal"],
-        "links": operations_found_at_inputs["links"],
+        "desc": get_from_map(operations_found_at_inputs, "desc"),
         "decimals": operations_found_at_inputs["decimals"],
         "tx_out_value": max_supply,
     }
-    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
+    trace_cache.append(make_point_dict(tx_hash, {
+        "op": "dmint"
+    }, inscription_context_dict))
 
 
 def get_from_map(m, key):
@@ -195,17 +205,23 @@ def get_from_map(m, key):
     return ""
 
 
-def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, is_deploy):
+def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id):
     inscription_context_dict = {
-        "is_deploy": is_deploy,
-        "args": operations_found_at_inputs["args"],
+        "time": get_from_map(operations_found_at_inputs["args"],"time"),
+        "nonce": get_from_map(operations_found_at_inputs["args"],"nonce"),
+        "bitworkc": get_from_map(operations_found_at_inputs["args"],"bitworkc"),
+        "max_mints": get_from_map(operations_found_at_inputs["args"],"max_mints"),
+        "mint_amount": get_from_map(operations_found_at_inputs["args"],"mint_amount"),
+        "mint_height": get_from_map(operations_found_at_inputs["args"],"mint_height"),
+        "mint_bitworkc": get_from_map(operations_found_at_inputs["args"],"mint_bitworkc"),
+        "request_ticker": get_from_map(operations_found_at_inputs["args"],"request_ticker"),
+        "atomical_id": location_id_bytes_to_compact(atomical_id),
         "desc": get_from_map(operations_found_at_inputs, "desc"),
         "name": get_from_map(operations_found_at_inputs, "name"),
-        "image": get_from_map(operations_found_at_inputs, "image"),
-        "legal": get_from_map(operations_found_at_inputs, "legal"),
-        "links": get_from_map(operations_found_at_inputs, "links"),
     }
-    trace_cache.append(make_point_dict(tx_hash, inscription_context_dict))
+    trace_cache.append(make_point_dict(tx_hash, {
+        "op": "deploy"
+    }, inscription_context_dict))
 
 
 def flush_trace(traces, general_data_cache, height):
@@ -219,7 +235,7 @@ def flush_trace(traces, general_data_cache, height):
 
 
 def get_address_from_script(script):
-    return script_to_address(script.hex(),net=BitcoinMainnet)
+    return script_to_address(script.hex(), net=BitcoinMainnet)
 
 
 def get_script_from_by_locatin_id(key, cache, db):

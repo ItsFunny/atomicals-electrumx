@@ -1435,12 +1435,15 @@ class BlockProcessor:
                 if not self.validate_and_create_ft_mint_utxo(mint_info, tx_hash):
                     # self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...')
                     return None
+
             if isDecentralized:
-                print(f'scfadd----- add_dft_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
-                add_dft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, True)
+                print(f'scfadd----- add_dft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()} ')
+                add_dft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash,atomical_id)
             else:
-                print(f'scfadd----- add_ft_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
-                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],txout.pk_script)
+                # The atomical would always be created at the first output
+                tx_out_index = 0
+                print(f'scfadd----- add_ft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()}')
+                add_ft_trace(self.trace_cache,operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],txout.pk_script,atomical_id,tx_out_index)
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
@@ -2725,7 +2728,7 @@ class BlockProcessor:
                     self.put_atomicals_utxo(location, potential_dmt_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(potential_dmt_atomical_id, location, scripthash + value_sats)
                     print(f'scfadd----- add_dmt_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
-                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash, True,txout.pk_script)
+                    add_dmt_trace(self.trace_cache,atomicals_operations_found_at_inputs["payload"], tx_hash,txout.pk_script,potential_dmt_atomical_id,mint_amount,expected_output_index)
                     return potential_dmt_atomical_id
                 self.logger.info(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
             else: 
@@ -2769,8 +2772,6 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
-        if height%100==0:
-            print(f'scf height {height} {len(txs)}')
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
