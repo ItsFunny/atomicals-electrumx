@@ -2931,8 +2931,6 @@ class BlockProcessor:
             update_touched(hashXs)
             tx_num += 1
 
-        if height>=808080:
-            raise 'fuck stop'
         self.db.history.add_unflushed(hashXs_by_tx, self.tx_count)
         self.tx_count = tx_num
         self.db.tx_counts.append(tx_num)
