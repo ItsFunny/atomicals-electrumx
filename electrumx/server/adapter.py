@@ -181,7 +181,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
     inscription_context_dict = {
         "args": operations_found_at_inputs["args"],
         "address": get_address_from_script(pubkey_script),
-        "desc": operations_found_at_inputs["desc"],
+        "desc": get_from_map(operations_found_at_inputs["desc"]),
         "name": operations_found_at_inputs["name"],
         "image": operations_found_at_inputs["image"],
         "legal": operations_found_at_inputs["legal"],
