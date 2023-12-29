@@ -20,7 +20,9 @@ def height():
     ret = {
         "code": 0,
         "msg": "success",
-        "data": app.db.db_height
+        "data": {
+            "crawler_height":app.db.db_height
+        }
     }
     return json.dumps(ret)
 
