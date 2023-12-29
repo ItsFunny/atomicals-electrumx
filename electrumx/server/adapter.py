@@ -10,6 +10,9 @@ from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
 from electrumx.lib.util_atomicals import location_id_bytes_to_compact, get_address_from_output_script
 
+from electrum.bitcoin import script_to_address
+from electrum.constants import BitcoinMainnet
+
 import hashlib
 
 
@@ -219,7 +222,7 @@ def flush_trace(traces, general_data_cache, height):
 
 
 def get_address_from_script(script):
-    return get_address_from_output_script(script.hex())
+    return script_to_address(script.hex(),net=BitcoinMainnet)
 
 
 def get_script_from_by_locatin_id(key, cache, db):
