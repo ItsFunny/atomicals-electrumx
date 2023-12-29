@@ -122,7 +122,6 @@ class Prefetcher:
         # This makes the first fetch be 10 blocks
         self.ave_size = self.min_cache_size // 10
         self.polling_delay = polling_delay_secs
-        self.update_scf = True
 
     async def main_loop(self, bp_height):
         '''Loop forever polling for more blocks.'''
@@ -177,9 +176,6 @@ class Prefetcher:
 
         Repeats until the queue is full or caught up.
         '''
-        if self.update_scf:
-            self.fetched_height = 808079
-            self.update_scf = False
         daemon = self.daemon
         daemon_height = await daemon.height()
         async with self.semaphore:
@@ -318,7 +314,7 @@ class BlockProcessor:
         hprevs = [self.coin.header_prevhash(h) for h in headers]
         chain = [self.tip] + [self.coin.header_hash(h) for h in headers[:-1]]
 
-        if True:
+        if hprevs == chain:
             start = time.monotonic()
             await self.run_in_thread_with_lock(self.advance_blocks, blocks)
             await self._maybe_flush()
@@ -2825,9 +2821,9 @@ class BlockProcessor:
             for txin in tx.inputs:
                 if txin.is_generation():
                     continue
-                # cache_value = spend_utxo(txin.prev_hash, txin.prev_idx)
-                # undo_info_append(cache_value)
-                # append_hashX(cache_value[:HASHX_LEN])
+                cache_value = spend_utxo(txin.prev_hash, txin.prev_idx)
+                undo_info_append(cache_value)
+                append_hashX(cache_value[:HASHX_LEN])
                 
                 # Only search and spend atomicals utxos if activated
                 if self.is_atomicals_activated(height):
@@ -2948,7 +2944,7 @@ class BlockProcessor:
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(concatenation_of_tx_hashes_with_valid_atomical_operation)
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
-            if height<808080 and height%500==0:
+            if height % 500 == 0:
                 print(f'height {height} {len(txs)} {tx_num}')
                 self.logger.info(f'Calculated Atomicals Block Hash: height={height}, atomicals_block_hash={hash_to_hex_str(current_height_atomicals_block_hash)}')
         
