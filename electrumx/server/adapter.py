@@ -207,6 +207,7 @@ def get_from_map(m, key):
 
 def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id):
     inscription_context_dict = {
+        "txid":hash_to_hex_str(tx_hash),
         "time": get_from_map(operations_found_at_inputs["args"],"time"),
         "nonce": get_from_map(operations_found_at_inputs["args"],"nonce"),
         "bitworkc": get_from_map(operations_found_at_inputs["args"],"bitworkc"),
