@@ -446,7 +446,7 @@ class BlockProcessor:
                          self.dmpay_data_cache, self.container_data_cache, self.distmint_data_cache, self.state_data_cache)
 
     async def flush(self, flush_utxos):
-        print(f'scfflush start {self.height}')
+        print(f'scfdb start {self.height}')
         def flush():
             self.db.flush_dbs(self.flush_data(), flush_utxos,
                               self.estimate_txs_remaining)
