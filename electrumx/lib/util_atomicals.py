@@ -587,12 +587,12 @@ def get_mint_info_op_factory(coin, tx, tx_hash, op_found_struct, atomicals_spent
             return None, None
 
         if realm:
-            print(f'NFT request_realm evaluating {hash_to_hex_str(tx_hash)}, {realm}')
+            # print(f'NFT request_realm evaluating {hash_to_hex_str(tx_hash)}, {realm}')
             if not isinstance(realm, str) or not is_valid_realm_string_name(realm):
                 print(f'NFT request_realm is invalid {hash_to_hex_str(tx_hash)}, {realm}. Skipping....')
                 return None, None 
             mint_info['$request_realm'] = realm
-            print(f'NFT request_realm_is_valid {hash_to_hex_str(tx_hash)}, {realm}')
+            # print(f'NFT request_realm_is_valid {hash_to_hex_str(tx_hash)}, {realm}')
         
         elif subrealm:
             if not isinstance(subrealm, str) or not is_valid_subrealm_string_name(subrealm):
@@ -935,7 +935,7 @@ def parse_operation_from_script(script, n):
     # check the 3 letter protocol operations
     if n + three_letter_op_len < script_len:
         atom_op = script[n : n + three_letter_op_len].hex()
-        print(f'Atomicals op script found: {atom_op}')
+        # print(f'Atomicals op script found: {atom_op}')
         if atom_op == "036e6674":
             atom_op_decoded = 'nft'  # nft - Mint non-fungible token
         elif atom_op == "03646674":  
@@ -1075,8 +1075,8 @@ def parse_protocols_operations_from_witness_for_input(txinwitness):
                             # Parse to ensure it is in the right format
                             operation_type, payload = parse_operation_from_script(script, n + 5)
                             if operation_type != None:
-                                print(f'Atomicals envelope and operation found: {operation_type}')
-                                print(f'Atomicals envelope payload: {payload.hex()}')
+                                # print(f'Atomicals envelope and operation found: {operation_type}')
+                                # print(f'Atomicals envelope payload: {payload.hex()}')
                                 return operation_type, payload
                             break
                 if found_operation_definition:
@@ -1780,11 +1780,10 @@ def get_address_from_output_script(p2tr_output_script_hex):
     addr = ''
     try:
         # "bc" for mainnet, "tb" for testnet
-        # if os.environ['NET'] == 'mainnet':
-        #     hrp = "bc"
-        # elif os.environ['NET'] =='testnet':
-        #     hrp = "tb"
-        hrp="bcrt" # regtest
+        if os.environ['NET'] == 'mainnet':
+            hrp = "bc"
+        elif os.environ['NET'] =='testnet':
+            hrp = "tb"
         witprog = list(bytes.fromhex(p2tr_output_script_hex))[2:34]
         witver = 1
         addr = encode(hrp, witver, witprog)
