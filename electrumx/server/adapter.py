@@ -191,7 +191,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
         "output_index": tx_out_index,
         "address": get_address_from_script(pubkey_script),
         "desc": get_from_map(operations_found_at_inputs, "desc"),
-        "decimals": operations_found_at_inputs["decimals"],
+        "decimals": get_from_map(operations_found_at_inputs,"decimals"),
         "tx_out_value": max_supply,
     }
     trace_cache.append(make_point_dict(tx_hash, {
