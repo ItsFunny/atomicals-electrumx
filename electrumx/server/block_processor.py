@@ -1697,12 +1697,15 @@ class BlockProcessor:
             # Used to indicate that all was cleanly assigned
             if remaining_value != 0:
                 cleanly_assigned = False
+            if live_run:
+                if atomical_id not in ret:
+                    ret[atomical_id] = []
+                ret[atomical_id].append(expected_output_indexes)
             # For each expected output to be colored, check for state-like updates
             for expected_output_index in expected_output_indexes:
                 # only perform the db updates if it is a live run
                 if live_run:
                     self.build_put_atomicals_utxo(atomical_id, tx_hash, tx, tx_num, expected_output_index)
-                    ret[expected_output_index]=True
             atomical_ids_touched.append(atomical_id)
         return cleanly_assigned,ret
   
