@@ -1663,6 +1663,7 @@ class BlockProcessor:
     def color_ft_atomicals_split(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, live_run):
         cleanly_assigned = True
         ret={}
+        print(f"scfsplit tx_hash {hash_to_hex_str(tx_hash)} {len(ft_atomicals)} {ft_atomicals}")
         for atomical_id, mint_info in sorted(ft_atomicals.items()):
             expected_output_indexes = []
             remaining_value = mint_info['value']
@@ -1678,15 +1679,19 @@ class BlockProcessor:
             if isinstance(total_amount_to_skip_potential, int) and total_amount_to_skip_potential >= 0:
                 total_amount_to_skip = total_amount_to_skip_potential
             total_skipped_so_far = 0
-            for out_idx, txout in enumerate(tx.outputs): 
+            print(f'scfsplit txhash-handletxi total_amount_to_skip {total_amount_to_skip} total_skipped_so_far {total_skipped_so_far} total_amount_to_skip_potential {total_amount_to_skip_potential}')
+            for out_idx, txout in enumerate(tx.outputs):
+                print(f'scfsplit {out_idx} {txout.value} total_amount_to_skip {total_amount_to_skip} total_skipped_so_far {total_skipped_so_far}')
                 # If the first output should be skipped and we have not yet done so, then skip/ignore it
                 if total_amount_to_skip > 0 and total_skipped_so_far < total_amount_to_skip:
-                    total_skipped_so_far += txout.value 
+                    total_skipped_so_far += txout.value
+                    print(f'scfsplit skip {total_amount_to_skip} {total_skipped_so_far} {txout.value}')
                     continue 
                 # For all remaining outputs attach colors as long as there is adequate remaining_value left to cover the entire output value
                 if txout.value <= remaining_value:
                     expected_output_indexes.append(out_idx)
                     remaining_value -= txout.value
+                    print(f'scfsplit {txout.value} {remaining_value} {out_idx}')
                     # We are done assigning all remaining values
                     if remaining_value == 0:
                         break
