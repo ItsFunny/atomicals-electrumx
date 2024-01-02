@@ -1700,7 +1700,7 @@ class BlockProcessor:
             if live_run:
                 if atomical_id not in ret:
                     ret[atomical_id] = []
-                ret[atomical_id].append(expected_output_indexes)
+                ret[atomical_id].extend(expected_output_indexes)
             # For each expected output to be colored, check for state-like updates
             for expected_output_index in expected_output_indexes:
                 # only perform the db updates if it is a live run
