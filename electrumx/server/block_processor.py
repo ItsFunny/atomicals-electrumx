@@ -1710,6 +1710,7 @@ class BlockProcessor:
             for expected_output_index in expected_output_indexes:
                 # only perform the db updates if it is a live run
                 if live_run:
+                    print(f'scfsplit {location_id_bytes_to_compact(atomical_id)} {expected_output_index} {expected_output_indexes}')
                     self.build_put_atomicals_utxo(atomical_id, tx_hash, tx, tx_num, expected_output_index)
             atomical_ids_touched.append(atomical_id)
         return cleanly_assigned,ret
