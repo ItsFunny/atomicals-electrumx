@@ -2779,7 +2779,7 @@ class BlockProcessor:
                     print(
                         f'scfadd----- add_dmt_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
                     add_dmt_trace(self.trace_cache, atomicals_operations_found_at_inputs["payload"], tx_hash,
-                                  txout.pk_script, potential_dmt_atomical_id, mint_amount, expected_output_index)
+                                  txout.pk_script, dmt_mint_atomical_id, mint_amount, expected_output_index)
                     return dmt_mint_atomical_id
             else:
                 self.logger.debug(f'create_or_delete_decentralized_mint_outputs found invalid mint operation because it is minted out completely. {hash_to_hex_str(tx_hash)}. Ignoring...')
