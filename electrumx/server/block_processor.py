@@ -15,6 +15,8 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
+from electrumx.server.adapter import get_script_from_by_locatin_id, little_endian_to_big_endian, add_dft_trace, \
+    add_ft_trace, add_ft_split_transfer_trace, add_ft_transfer_trace, add_dmt_trace, flush_trace
 from electrumx.server.daemon import DaemonError, Daemon
 from electrumx.lib.hash import hash_to_hex_str, HASHX_LEN, double_sha256
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_legacy, is_unspendable_genesis
@@ -69,6 +71,8 @@ from electrumx.lib.util_atomicals import (
 )
 
 import copy
+
+from electrumx.server.http_helper import start_http
 
 if TYPE_CHECKING:
     from electrumx.lib.coins import Coin
@@ -218,6 +222,7 @@ class ChainError(Exception):
     '''Raised on error processing blocks.'''
 
 
+
 class BlockProcessor:
     '''Process blocks and update the DB state to match.
 
@@ -283,7 +288,7 @@ class BlockProcessor:
         self.atomicals_rpc_format_cache = pylru.lrucache(100000)
         self.atomicals_rpc_general_cache = pylru.lrucache(100000)
         self.atomicals_dft_mint_count_cache = pylru.lrucache(1000)        # tracks number of minted tokens per dft mint to make processing faster per blocks
-  
+        self.trace_cache = []
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
         # cancellations from shutdown don't lose work - when the task
@@ -531,10 +536,10 @@ class BlockProcessor:
         # Check if it was the split y operation because that is handled differently
         should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
         if should_split_ft_atomicals:
-            cleanly_assigned = self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, False)
+            cleanly_assigned ,excepted_output,_= self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, False)
         else:
             # Prepare the logic check to determine if the FTs are cleanly assigned (ie: no accidental burning loss would occur)
-            cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs, [], self.height, False)
+            _,cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs, [], self.height, False)
         # Everything would have been cleanly assigned
         if cleanly_assigned:
             return True 
@@ -867,10 +872,13 @@ class BlockProcessor:
             for key in cache_map.keys(): 
                 value_with_tombstone = cache_map[key]
                 value = value_with_tombstone['value']
+                location_key = b'po' + location_id
+                script = get_script_from_by_locatin_id(location_key, self.general_data_cache, self.db)
                 atomicals_data_list_cached.append({
                     'atomical_id': key,
                     'location_id': location_id,
-                    'data': value
+                    'data': value,
+                    'script': script
                 })
                 if live_run:
                     value_with_tombstone['found_in_cache'] = True
@@ -898,11 +906,13 @@ class BlockProcessor:
             if live_run:
                 self.delete_general_data(b'a' + atomical_id + location_id)
                 self.logger.debug(f'spend_atomicals_utxo: utxo_db. location_id={location_id_bytes_to_compact(location_id)} atomical_id={location_id_bytes_to_compact(atomical_id)}, value={atomical_i_db_value}')
-            
+            location_key = b'po' + location_id
+            script = get_script_from_by_locatin_id(location_key, self.general_data_cache, self.db)
             atomicals_data_list.append({
                 'atomical_id': atomical_id,
                 'location_id': location_id,
-                'data': atomical_i_db_value
+                'data': atomical_i_db_value,
+                'script': script,
             })
             
             # Return all of the atomicals spent at the address
@@ -1432,9 +1442,11 @@ class BlockProcessor:
                     return None
 
         elif valid_create_op_type == 'FT':
+            isDecentralized = False
             # Add $max_supply informative property
             if mint_info['subtype'] == 'decentralized':
-                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints'] 
+                mint_info['$max_supply'] = mint_info['$mint_amount'] * mint_info['$max_mints']
+                isDecentralized = True
             else: 
                 mint_info['$max_supply'] = txout.value
             if not self.create_or_delete_ticker_entry_if_requested(mint_info, height, Delete):
@@ -1443,6 +1455,15 @@ class BlockProcessor:
                 if not self.validate_and_create_ft_mint_utxo(mint_info, tx_hash):
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
+            if isDecentralized:
+                print(f'scfadd----- add_dft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()} ')
+                add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id)
+            else:
+                # The atomical would always be created at the first output
+                tx_out_index = 0
+                print(f'scfadd----- add_ft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()}')
+                add_ft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],
+                             txout.pk_script, atomical_id, tx_out_index)
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
@@ -1661,6 +1682,8 @@ class BlockProcessor:
         return output_colored_map
     def color_ft_atomicals_split(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, live_run):
         cleanly_assigned = True
+        ret = {}
+        skip_value = {}
         for atomical_id, mint_info in sorted(ft_atomicals.items()):
             expected_output_indexes = []
             remaining_value = mint_info['value']
@@ -1673,6 +1696,7 @@ class BlockProcessor:
             compact_atomical_id = location_id_bytes_to_compact(atomical_id)
             total_amount_to_skip_potential = operations_found_at_inputs.get('payload').get(compact_atomical_id)
             # Sanity check to ensure it is a non-negative integer
+            skip_value[atomical_id] = total_amount_to_skip_potential
             if isinstance(total_amount_to_skip_potential, int) and total_amount_to_skip_potential >= 0:
                 total_amount_to_skip = total_amount_to_skip_potential
             total_skipped_so_far = 0
@@ -1695,19 +1719,23 @@ class BlockProcessor:
             # Used to indicate that all was cleanly assigned
             if remaining_value != 0:
                 cleanly_assigned = False
+            if live_run:
+                if atomical_id not in ret:
+                    ret[atomical_id] = []
+                ret[atomical_id].extend(expected_output_indexes)
             # For each expected output to be colored, check for state-like updates
             for expected_output_index in expected_output_indexes:
                 # only perform the db updates if it is a live run
                 if live_run:
                     self.build_put_atomicals_utxo(atomical_id, tx_hash, tx, tx_num, expected_output_index)
             atomical_ids_touched.append(atomical_id)
-        return cleanly_assigned
+        return cleanly_assigned,ret,skip_value
   
     def color_ft_atomicals_regular_perform(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run, sort_fifo):
         self.logger.debug(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} start check')
         atomical_id_to_expected_outs_map, cleanly_assigned, atomicals_list_result = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, sort_fifo)
         if not atomical_id_to_expected_outs_map:
-            return None
+            return None,None
         self.logger.debug(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} return ft_atomicals={ft_atomicals} atomical_id_to_expected_outs_map={atomical_id_to_expected_outs_map}')
         sanity_check_sums = {}
         for atomical_id, outputs_to_color in atomical_id_to_expected_outs_map.items():
@@ -1739,7 +1767,7 @@ class BlockProcessor:
             value_sats = pack_le_uint64(txout.value)
             self.put_or_delete_state_updates(operations_found_at_inputs, atomical_id_of_first_ft, tx_num, tx_hash, output_idx_le, height, 1, False)
 
-        return cleanly_assigned 
+        return atomical_id_to_expected_outs_map,cleanly_assigned
 
     def color_ft_atomicals_regular(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run):
         return self.color_ft_atomicals_regular_perform(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run, self.is_dmint_activated(height))
@@ -1829,11 +1857,27 @@ class BlockProcessor:
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
             if should_split_ft_atomicals:
-                if not self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, True):
+                is_clean, atomical_id_to_expected_outs_map, skip_value = self.color_ft_atomicals_split(ft_atomicals,
+                                                                                                       tx_hash, tx,
+                                                                                                       tx_num,
+                                                                                                       operations_found_at_inputs,
+                                                                                                       atomical_ids_touched,
+                                                                                                       True)
+                if not is_clean:
                     self.logger.warning(f'ft_burned_split @ tx_hash={hash_to_hex_str(tx_hash)}')
+                add_ft_split_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
+                                            atomical_id_to_expected_outs_map, skip_value, ft_atomicals)
             else:
-                if not self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, True):
+                atomical_id_to_expected_outs_map, cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals,
+                                                                                                     tx_hash, tx,
+                                                                                                     tx_num,
+                                                                                                     operations_found_at_inputs,
+                                                                                                     atomical_ids_touched,
+                                                                                                     height, True)
+                if not cleanly_assigned:
                     self.logger.warning(f'ft_burned @ tx_hash={hash_to_hex_str(tx_hash)}')
+                add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
+                                      atomical_id_to_expected_outs_map)
         return atomical_ids_touched
 
     # Create or delete data that was found at the location
@@ -2731,6 +2775,10 @@ class BlockProcessor:
                     self.put_atomicals_utxo(location, dmt_mint_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(dmt_mint_atomical_id, location, scripthash + value_sats)
                     self.logger.debug(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
+                    print(
+                        f'scfadd----- add_dmt_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
+                    add_dmt_trace(self.trace_cache, atomicals_operations_found_at_inputs["payload"], tx_hash,
+                                  txout.pk_script, potential_dmt_atomical_id, mint_amount, expected_output_index)
                     return dmt_mint_atomical_id
             else:
                 self.logger.debug(f'create_or_delete_decentralized_mint_outputs found invalid mint operation because it is minted out completely. {hash_to_hex_str(tx_hash)}. Ignoring...')
@@ -2963,6 +3011,7 @@ class BlockProcessor:
         self.db.atomical_counts.append(atomical_num)
             
         if self.is_atomicals_activated(height):
+            flush_trace(self.trace_cache, self.general_data_cache, height)
             # Save the atomicals hash for the current block
             current_height_atomicals_block_hash = self.coin.header_hash(b''.join(concatenation_of_tx_hashes_with_valid_atomical_operation))
             put_general_data(b'tt' + pack_le_uint32(height), current_height_atomicals_block_hash)
@@ -3644,6 +3693,7 @@ class BlockProcessor:
         '''
         self._caught_up_event = caught_up_event
         await self._first_open_dbs()
+        start_http(self.db)
         try:
             async with OldTaskGroup() as group:
                 await group.spawn(self.prefetcher.main_loop(self.height))
