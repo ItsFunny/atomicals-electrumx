@@ -97,25 +97,15 @@ def make_point_dict(tx_id, inscription, inscription_context):
 
 def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map,
                                 skip_value,ft_atomicals):
-    print(f'scf split skip_value {type(skip_value)} {skip_value} {little_endian_to_big_endian(tx_hash).hex()}')
-    for k,v in skip_value.items():
-        print(f'k {k} {type(k)} {location_id_bytes_to_compact(k)} {type(v)} {v}')
     vin = []
-
-    for k,v in ft_atomicals.items():
-        print(f'ft_atomail {type(k)} {k}  {location_id_bytes_to_compact(k)} {v} {type(v)}')
-
-
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         a_list = []
         value = 0
         address = ""
         for atomic in atomicals_entry_list:
             atomical_id = atomic["atomical_id"]
-            print(f'handle {txin_index} {location_id_bytes_to_compact(atomical_id)}')
             if atomical_id not in ft_atomicals:
                 continue
-            print(f'handl-ficke {txin_index} {location_id_bytes_to_compact(atomical_id)}')
             address = atomic["script"]
             value = handle_value(atomic["data"])
             a_list.append({
@@ -146,8 +136,6 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
             "address": get_address_from_output_script(txout.pk_script),
             "value": value
         })
-    print(f'ans---- {vin}')
-    print(f'ans---- {vout}')
     trace_cache.append(make_point_dict(tx_hash, {"op": "transfer"}, {
         "tx_id": hash_to_hex_str(tx_hash),
         "split_vin": vin,
@@ -289,8 +277,6 @@ def flush_trace(traces, general_data_cache, height):
     put_general_data = general_data_cache.__setitem__
     data = dumps(traces)
     put_general_data(trace_key, data)
-    if len(data) != 1:
-        print(f'scf----- flush_trace {height} {len(traces)}')
     traces.clear()
 
 

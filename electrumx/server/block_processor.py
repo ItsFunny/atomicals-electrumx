@@ -453,14 +453,13 @@ class BlockProcessor:
     async def _maybe_flush(self):
         # If caught up, flush everything as client queries are
         # performed on the DB.
-        await self.flush(True)
-        # if self._caught_up_event.is_set():
-        #     await self.flush(True)
-        # elif time.monotonic() > self.next_cache_check:
-        #     flush_arg = self.check_cache_size()
-        #     if flush_arg is not None:
-        #         await self.flush(flush_arg)
-        #     self.next_cache_check = time.monotonic() + 30
+        if self._caught_up_event.is_set():
+            await self.flush(True)
+        elif time.monotonic() > self.next_cache_check:
+            flush_arg = self.check_cache_size()
+            if flush_arg is not None:
+                await self.flush(flush_arg)
+            self.next_cache_check = time.monotonic() + 30
 
     def check_cache_size(self):
         '''Flush a cache if it gets too big.'''
@@ -1457,12 +1456,10 @@ class BlockProcessor:
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
             if isDecentralized:
-                print(f'scfadd----- add_dft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()} ')
                 add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id)
             else:
                 # The atomical would always be created at the first output
                 tx_out_index = 0
-                print(f'scfadd----- add_ft_trace ----- {height}  {little_endian_to_big_endian(tx_hash).hex()}')
                 add_ft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],
                              txout.pk_script, atomical_id, tx_out_index)
         else: 
@@ -2776,8 +2773,6 @@ class BlockProcessor:
                     self.put_atomicals_utxo(location, dmt_mint_atomical_id, hashX + scripthash + value_sats + pack_le_uint16(0) + tx_numb)
                     self.put_decentralized_mint_data(dmt_mint_atomical_id, location, scripthash + value_sats)
                     self.logger.debug(f'create_or_delete_decentralized_mint_outputs found valid request in {hash_to_hex_str(tx_hash)} for {ticker}. Granting and creating decentralized mint...')
-                    print(
-                        f'scfadd----- add_dmt_trace ----- {height} {tx_num} {little_endian_to_big_endian(tx_hash).hex()}')
                     add_dmt_trace(self.trace_cache, atomicals_operations_found_at_inputs["payload"], tx_hash,
                                   txout.pk_script, dmt_mint_atomical_id, mint_amount, expected_output_index)
                     return dmt_mint_atomical_id
