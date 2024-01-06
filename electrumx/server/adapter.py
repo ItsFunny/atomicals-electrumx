@@ -96,7 +96,7 @@ def make_point_dict(tx_id, inscription, inscription_context):
 
 
 def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map,
-                                skip_value,ft_atomicals):
+                                skip_value,ft_atomicals,real_compact_atomical_id_order):
     vin = []
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         a_list = []
@@ -139,11 +139,12 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
     trace_cache.append(make_point_dict(tx_hash, {"op": "transfer"}, {
         "tx_id": hash_to_hex_str(tx_hash),
         "split_vin": vin,
-        "split_vout": vout
+        "split_vout": vout,
+        "real_atomical_id_order":real_compact_atomical_id_order
     }))
 
 
-def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map):
+def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map,real_compact_atomical_id_order):
     vin_dict = {}
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         for atomic in atomicals_entry_list:
@@ -205,7 +206,8 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
         "tx_id": hash_to_hex_str(tx_hash),
         "flattened_vin": flattened_vin,
         "vin": vin,
-        "vout": vout
+        "vout": vout,
+        "real_atomical_id_order":real_compact_atomical_id_order
     }))
 
 

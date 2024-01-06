@@ -1401,8 +1401,9 @@ def build_reverse_output_to_atomical_id_map(atomical_id_to_output_index_map):
 def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, sort_by_fifo):
     num_fts = len(ft_atomicals.keys())
     if num_fts == 0:
-        return None, None, None
+        return None, None, None,None
     atomical_list = []
+    real_compact_atomical_id_order=[]
     # If sorting is by FIFO, then get the mappng of which FTs are at which inputs
     if sort_by_fifo:
         input_idx_map = {}
@@ -1433,6 +1434,7 @@ def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, so
     non_clean_output_slots = False
     for item in atomical_list:
         atomical_id = item['atomical_id']
+        real_compact_atomical_id_order.append(location_id_bytes_to_compact(atomical_id))
         print(f'scflog handle {atomical_id}')
         v = item['ft_info']['value']
         cleanly_assigned, expected_outputs = assign_expected_outputs_basic(atomical_id, v, tx, next_start_out_idx)
@@ -1453,9 +1455,9 @@ def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, so
             cleanly_assigned, expected_outputs = assign_expected_outputs_basic(atomical_id, item['ft_info']['value'], tx, 0)
             potential_atomical_ids_to_output_idxs_map[atomical_id] = expected_outputs
             print(f'scflog not clean output_slots {atomical_id} {expected_outputs}')
-        return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list
+        return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list,real_compact_atomical_id_order
     else:
-        return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list
+        return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list,real_compact_atomical_id_order
 
 def is_split_operation(operations_found_at_inputs):
     return operations_found_at_inputs and operations_found_at_inputs.get('op') == 'y' and operations_found_at_inputs.get('input_index') == 0

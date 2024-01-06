@@ -537,10 +537,10 @@ class BlockProcessor:
         # Check if it was the split y operation because that is handled differently
         should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
         if should_split_ft_atomicals:
-            cleanly_assigned ,excepted_output,_= self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, False)
+            cleanly_assigned ,excepted_output,_,_= self.color_ft_atomicals_split(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, False)
         else:
             # Prepare the logic check to determine if the FTs are cleanly assigned (ie: no accidental burning loss would occur)
-            _,cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs, [], self.height, False)
+            _,cleanly_assigned,_ = self.color_ft_atomicals_regular(ft_atomicals, tx_hash, tx, 0, operations_found_at_inputs, [], self.height, False)
         # Everything would have been cleanly assigned
         if cleanly_assigned:
             return True 
@@ -1683,6 +1683,7 @@ class BlockProcessor:
         cleanly_assigned = True
         ret = {}
         skip_value = {}
+        real_compact_atomical_id_order=[]
         for atomical_id, mint_info in sorted(ft_atomicals.items()):
             expected_output_indexes = []
             remaining_value = mint_info['value']
@@ -1693,6 +1694,7 @@ class BlockProcessor:
             total_amount_to_skip = 0
             # Uses the compact form of atomical id as the keys for developer convenience
             compact_atomical_id = location_id_bytes_to_compact(atomical_id)
+            real_compact_atomical_id_order.append(atomical_id)
             total_amount_to_skip_potential = operations_found_at_inputs.get('payload').get(compact_atomical_id)
             # Sanity check to ensure it is a non-negative integer
             skip_value[atomical_id] = total_amount_to_skip_potential
@@ -1728,13 +1730,13 @@ class BlockProcessor:
                 if live_run:
                     self.build_put_atomicals_utxo(atomical_id, tx_hash, tx, tx_num, expected_output_index)
             atomical_ids_touched.append(atomical_id)
-        return cleanly_assigned,ret,skip_value
+        return cleanly_assigned,ret,skip_value,real_compact_atomical_id_order
   
     def color_ft_atomicals_regular_perform(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run, sort_fifo):
         self.logger.debug(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} start check')
-        atomical_id_to_expected_outs_map, cleanly_assigned, atomicals_list_result = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, sort_fifo)
+        atomical_id_to_expected_outs_map, cleanly_assigned, atomicals_list_result,real_compact_atomical_id_order = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, sort_fifo)
         if not atomical_id_to_expected_outs_map:
-            return None,None
+            return None,None,None
         self.logger.debug(f'color_ft_atomicals_regular_perform tx_hash={hash_to_hex_str(tx_hash)} return ft_atomicals={ft_atomicals} atomical_id_to_expected_outs_map={atomical_id_to_expected_outs_map}')
         sanity_check_sums = {}
         for atomical_id, outputs_to_color in atomical_id_to_expected_outs_map.items():
@@ -1766,7 +1768,7 @@ class BlockProcessor:
             value_sats = pack_le_uint64(txout.value)
             self.put_or_delete_state_updates(operations_found_at_inputs, atomical_id_of_first_ft, tx_num, tx_hash, output_idx_le, height, 1, False)
 
-        return atomical_id_to_expected_outs_map,cleanly_assigned
+        return atomical_id_to_expected_outs_map,cleanly_assigned,real_compact_atomical_id_order
 
     def color_ft_atomicals_regular(self, ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run):
         return self.color_ft_atomicals_regular_perform(ft_atomicals, tx_hash, tx, tx_num, operations_found_at_inputs, atomical_ids_touched, height, live_run, self.is_dmint_activated(height))
@@ -1856,7 +1858,7 @@ class BlockProcessor:
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
             if should_split_ft_atomicals:
-                is_clean, atomical_id_to_expected_outs_map, skip_value = self.color_ft_atomicals_split(ft_atomicals,
+                is_clean, atomical_id_to_expected_outs_map, skip_value,real_compact_atomical_id_order = self.color_ft_atomicals_split(ft_atomicals,
                                                                                                        tx_hash, tx,
                                                                                                        tx_num,
                                                                                                        operations_found_at_inputs,
@@ -1865,10 +1867,10 @@ class BlockProcessor:
                 if not is_clean:
                     self.logger.warning(f'ft_burned_split @ tx_hash={hash_to_hex_str(tx_hash)}')
                 add_ft_split_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
-                                            atomical_id_to_expected_outs_map, skip_value, ft_atomicals)
+                                            atomical_id_to_expected_outs_map, skip_value, ft_atomicals,real_compact_atomical_id_order)
             else:
                 print(f'scflog begin color_ft_atomicals_regular')
-                atomical_id_to_expected_outs_map, cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals,
+                atomical_id_to_expected_outs_map, cleanly_assigned ,real_compact_atomical_id_order= self.color_ft_atomicals_regular(ft_atomicals,
                                                                                                      tx_hash, tx,
                                                                                                      tx_num,
                                                                                                      operations_found_at_inputs,
@@ -1877,7 +1879,7 @@ class BlockProcessor:
                 if not cleanly_assigned:
                     self.logger.warning(f'ft_burned @ tx_hash={hash_to_hex_str(tx_hash)}')
                 add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
-                                      atomical_id_to_expected_outs_map)
+                                      atomical_id_to_expected_outs_map,real_compact_atomical_id_order)
         return atomical_ids_touched
 
     # Create or delete data that was found at the location
@@ -3061,7 +3063,7 @@ class BlockProcessor:
             
             # Each of the elements in the expected script output map must be satisfied for it to be a valid payment
             nft_atomicals, ft_atomicals = self.build_atomical_type_structs(atomicals_spent_at_inputs)
-            atomical_id_to_output_index_map, ignore, atomicals_list_result = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, self.is_dmint_activated(height))
+            atomical_id_to_output_index_map, ignore, atomicals_list_result,_ = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, self.is_dmint_activated(height))
             output_idx_to_atomical_id_map = build_reverse_output_to_atomical_id_map(atomical_id_to_output_index_map)
             expected_output_keys_satisfied = {}
             for output_script_key, output_script_details in expected_payment_outputs.items():
@@ -3154,7 +3156,7 @@ class BlockProcessor:
             # Each of the elements in the expected script output map must be satisfied for it to be a valid payment
             nft_atomicals, ft_atomicals = self.build_atomical_type_structs(atomicals_spent_at_inputs)
             # Map the ARC20 fungible tokens first
-            atomical_id_to_output_index_map, ignore, atomicals_list_result = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, self.is_dmint_activated(height))
+            atomical_id_to_output_index_map, ignore, atomicals_list_result,_ = calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, self.is_dmint_activated(height))
             output_idx_to_atomical_id_map = build_reverse_output_to_atomical_id_map(atomical_id_to_output_index_map)
             # Future enhancement is to allow minting by NFT and or holding a realm/subrealm, or glob patterns like txid
             expected_output_keys_satisfied = {}
