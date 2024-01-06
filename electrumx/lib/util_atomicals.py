@@ -1427,14 +1427,16 @@ def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, so
                 'atomical_id': atomical_id,
                 'ft_info': ft_info
             })
-
+    print(f'scflog {sort_by_fifo}')
     next_start_out_idx = 0
     potential_atomical_ids_to_output_idxs_map = {}
     non_clean_output_slots = False
     for item in atomical_list:
         atomical_id = item['atomical_id']
+        print(f'scflog handle {compact_to_location_id_bytes(atomical_id)}')
         v = item['ft_info']['value']
         cleanly_assigned, expected_outputs = assign_expected_outputs_basic(atomical_id, v, tx, next_start_out_idx)
+        print(f'scflog clean_assigned {cleanly_assigned} {expected_outputs}')
         if cleanly_assigned and len(expected_outputs) > 0:
             next_start_out_idx = expected_outputs[-1] + 1
             potential_atomical_ids_to_output_idxs_map[atomical_id] = expected_outputs
@@ -1450,6 +1452,7 @@ def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, so
             atomical_id = item['atomical_id']
             cleanly_assigned, expected_outputs = assign_expected_outputs_basic(atomical_id, item['ft_info']['value'], tx, 0)
             potential_atomical_ids_to_output_idxs_map[atomical_id] = expected_outputs
+            print(f'scflog not clean output_slots {compact_to_location_id_bytes(atomical_id)} {expected_outputs}')
         return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list
     else:
         return potential_atomical_ids_to_output_idxs_map, not non_clean_output_slots, atomical_list

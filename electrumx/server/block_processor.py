@@ -1867,6 +1867,7 @@ class BlockProcessor:
                 add_ft_split_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
                                             atomical_id_to_expected_outs_map, skip_value, ft_atomicals)
             else:
+                print(f'scflog begin color_ft_atomicals_regular')
                 atomical_id_to_expected_outs_map, cleanly_assigned = self.color_ft_atomicals_regular(ft_atomicals,
                                                                                                      tx_hash, tx,
                                                                                                      tx_num,
@@ -2817,9 +2818,9 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
-        if height==810916:
+        if height==810917:
             self.flush(True)
-            raise 'scf-fuck 810916'
+            raise 'scf-fuck 810917'
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
