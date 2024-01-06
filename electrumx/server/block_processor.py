@@ -453,14 +453,15 @@ class BlockProcessor:
     async def _maybe_flush(self):
         # If caught up, flush everything as client queries are
         # performed on the DB.
-        if self._caught_up_event.is_set():
-            await self.flush(True)
-        elif time.monotonic() > self.next_cache_check:
-            flush_arg = self.check_cache_size()
-            if flush_arg is not None:
-                await self.flush(flush_arg)
-            self.next_cache_check = time.monotonic() + 30
-
+        await self.flush(True)
+        # if self._caught_up_event.is_set():
+        #     await self.flush(True)
+        # elif time.monotonic() > self.next_cache_check:
+        #     flush_arg = self.check_cache_size()
+        #     if flush_arg is not None:
+        #         await self.flush(flush_arg)
+        #     self.next_cache_check = time.monotonic() + 30
+    #
     def check_cache_size(self):
         '''Flush a cache if it gets too big.'''
         # Good average estimates based on traversal of subobjects and
@@ -2816,6 +2817,9 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
+        if height==810916:
+            self.flush(True)
+            raise 'scf-fuck 810916'
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
