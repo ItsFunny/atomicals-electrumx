@@ -2820,9 +2820,6 @@ class BlockProcessor:
             header,
             height
     ) -> Sequence[bytes]:
-        if height==810917:
-            self.flush(True)
-            raise 'scf-fuck 810917'
         self.tx_hashes.append(b''.join(tx_hash for tx, tx_hash in txs))
         self.atomicals_rpc_format_cache.clear()
         self.atomicals_rpc_general_cache.clear()
