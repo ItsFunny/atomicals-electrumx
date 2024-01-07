@@ -1694,7 +1694,7 @@ class BlockProcessor:
             total_amount_to_skip = 0
             # Uses the compact form of atomical id as the keys for developer convenience
             compact_atomical_id = location_id_bytes_to_compact(atomical_id)
-            real_compact_atomical_id_order.append(atomical_id)
+            real_compact_atomical_id_order.append(compact_atomical_id)
             total_amount_to_skip_potential = operations_found_at_inputs.get('payload').get(compact_atomical_id)
             # Sanity check to ensure it is a non-negative integer
             skip_value[atomical_id] = total_amount_to_skip_potential

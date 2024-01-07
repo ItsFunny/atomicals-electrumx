@@ -51,7 +51,7 @@ def zero_indexer(height):
 
 def run_http():
     print("http start,port:26656")
-    app.run(debug=False, host="0.0.0.0", port=26656)
+    app.run(debug=False, host="0.0.0.0", port=36657)
 
 
 def start_http(db):
