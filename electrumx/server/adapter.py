@@ -5,7 +5,7 @@ import struct
 import electrumx.lib.util
 from cbor2 import dumps, loads, CBORDecodeError
 
-from electrumx.lib.script import SCRIPTHASH_LEN
+from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_genesis, is_unspendable_legacy
 from electrumx.lib.script2addr import get_address_from_output_script
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
@@ -125,14 +125,9 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
             "atomicals": a_list,
         })
 
-    need_vout_index = {}
-    for k, v in atomical_id_to_expected_outs_map.items():
-        for vv in v:
-            need_vout_index[vv] = True
-
     vout = []
     for idx, txout in enumerate(tx.outputs):
-        if idx not in need_vout_index:
+        if is_unspendable_genesis(txout.pk_script) or is_unspendable_legacy(txout.pk_script):
             continue
         value = txout.value
         vout.append({
