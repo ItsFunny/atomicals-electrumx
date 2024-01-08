@@ -455,7 +455,7 @@ class BlockProcessor:
         # If caught up, flush everything as client queries are
         # performed on the DB.
         self.scf_cnt+=1
-        if self.scf_cnt%20==0:
+        if self.scf_cnt%30==0:
             await self.flush(True)
         # if self._caught_up_event.is_set():
         #     await self.flush(True)
