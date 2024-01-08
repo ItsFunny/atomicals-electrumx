@@ -220,7 +220,6 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
         "flattened_vin": flattened_vin,
         "vin": vin,
         "vout": vout,
-        "real_atomical_id_order":real_compact_atomical_id_order
     }))
 
 
