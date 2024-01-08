@@ -140,7 +140,7 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
             "address": get_address_from_output_script(txout.pk_script),
             "value": value
         })
-    trace_cache.append(make_point_dict(tx_hash, {"op": "transfer"}, {
+    trace_cache.append(make_point_dict(tx_hash, {"op": "split"}, {
         "tx_id": hash_to_hex_str(tx_hash),
         "split_vin": vin,
         "split_vout": vout,
