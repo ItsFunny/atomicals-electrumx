@@ -1694,7 +1694,7 @@ class BlockProcessor:
             total_amount_to_skip = 0
             # Uses the compact form of atomical id as the keys for developer convenience
             compact_atomical_id = location_id_bytes_to_compact(atomical_id)
-            real_compact_atomical_id_order.append(compact_atomical_id)
+            real_compact_atomical_id_order.append(atomical_id)
             total_amount_to_skip_potential = operations_found_at_inputs.get('payload').get(compact_atomical_id)
             # Sanity check to ensure it is a non-negative integer
             skip_value[atomical_id] = total_amount_to_skip_potential
@@ -1858,7 +1858,7 @@ class BlockProcessor:
         if len(ft_atomicals) > 0:
             should_split_ft_atomicals = is_split_operation(operations_found_at_inputs)
             if should_split_ft_atomicals:
-                is_clean, atomical_id_to_expected_outs_map, skip_value,real_compact_atomical_id_order = self.color_ft_atomicals_split(ft_atomicals,
+                is_clean, atomical_id_to_expected_outs_map, skip_value,real_atomical_id_order = self.color_ft_atomicals_split(ft_atomicals,
                                                                                                        tx_hash, tx,
                                                                                                        tx_num,
                                                                                                        operations_found_at_inputs,
@@ -1867,10 +1867,10 @@ class BlockProcessor:
                 if not is_clean:
                     self.logger.warning(f'ft_burned_split @ tx_hash={hash_to_hex_str(tx_hash)}')
                 add_ft_split_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
-                                            atomical_id_to_expected_outs_map, skip_value, ft_atomicals,real_compact_atomical_id_order)
+                                            atomical_id_to_expected_outs_map, skip_value, ft_atomicals,real_atomical_id_order)
             else:
                 print(f'scflog begin color_ft_atomicals_regular')
-                atomical_id_to_expected_outs_map, cleanly_assigned ,real_compact_atomical_id_order= self.color_ft_atomicals_regular(ft_atomicals,
+                atomical_id_to_expected_outs_map, cleanly_assigned ,real_atomical_id_order= self.color_ft_atomicals_regular(ft_atomicals,
                                                                                                      tx_hash, tx,
                                                                                                      tx_num,
                                                                                                      operations_found_at_inputs,
@@ -1879,7 +1879,7 @@ class BlockProcessor:
                 if not cleanly_assigned:
                     self.logger.warning(f'ft_burned @ tx_hash={hash_to_hex_str(tx_hash)}')
                 add_ft_transfer_trace(self.trace_cache, tx_hash, tx, atomicals_spent_at_inputs,
-                                      atomical_id_to_expected_outs_map,real_compact_atomical_id_order)
+                                      atomical_id_to_expected_outs_map,real_atomical_id_order)
         return atomical_ids_touched
 
     # Create or delete data that was found at the location

@@ -96,16 +96,20 @@ def make_point_dict(tx_id, inscription, inscription_context):
 
 
 def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, atomical_id_to_expected_outs_map,
-                                skip_value,ft_atomicals,real_compact_atomical_id_order):
+                                skip_value,ft_atomicals,real_atomical_id_order):
     vin = []
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
         a_list = []
         value = 0
         address = ""
+        tmp_mp={}
         for atomic in atomicals_entry_list:
             atomical_id = atomic["atomical_id"]
+            tmp_mp[atomical_id]=atomic
+        for atomical_id in real_atomical_id_order:
             if atomical_id not in ft_atomicals:
                 continue
+            atomic=tmp_mp[atomical_id]
             address = atomic["script"]
             value = handle_value(atomic["data"])
             a_list.append({
@@ -140,7 +144,6 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
         "tx_id": hash_to_hex_str(tx_hash),
         "split_vin": vin,
         "split_vout": vout,
-        "real_atomical_id_order":real_compact_atomical_id_order
     }))
 
 
@@ -161,13 +164,23 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
                 vin_dict[atomical_id][script] = vin_dict[atomical_id][script] + value
 
     flattened_vin = []
-    for atomical_id, address_list in vin_dict.items():
-        for address, value in address_list.items():
+
+    for atomical_id in real_compact_atomical_id_order:
+        address_list=vin_dict[atomical_id]
+        for address,value in address_list.items():
             flattened_vin.append({
                 "atomical_id": location_id_bytes_to_compact(atomical_id),
                 "address": address,
                 "value": value
             })
+
+    # for atomical_id, address_list in vin_dict.items():
+    #     for address, value in address_list.items():
+    #         flattened_vin.append({
+    #             "atomical_id": location_id_bytes_to_compact(atomical_id),
+    #             "address": address,
+    #             "value": value
+    #         })
 
     vin = []
     for txin_index, atomicals_entry_list in atomicals_spent_at_inputs.items():
