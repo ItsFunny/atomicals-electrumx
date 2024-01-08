@@ -1428,13 +1428,15 @@ def calculate_outputs_to_color_for_ft_atomical_ids(ft_atomicals, tx_hash, tx, so
                 'atomical_id': atomical_id,
                 'ft_info': ft_info
             })
+    for item in atomical_list:
+        atomical_id = item['atomical_id']
+        real_compact_atomical_id_order.append(atomical_id)
     print(f'scflog {sort_by_fifo}')
     next_start_out_idx = 0
     potential_atomical_ids_to_output_idxs_map = {}
     non_clean_output_slots = False
     for item in atomical_list:
         atomical_id = item['atomical_id']
-        real_compact_atomical_id_order.append(atomical_id)
         print(f'scflog handle {atomical_id}')
         v = item['ft_info']['value']
         cleanly_assigned, expected_outputs = assign_expected_outputs_basic(atomical_id, v, tx, next_start_out_idx)

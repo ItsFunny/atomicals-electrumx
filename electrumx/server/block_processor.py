@@ -1688,6 +1688,8 @@ class BlockProcessor:
         skip_value = {}
         real_compact_atomical_id_order=[]
         for atomical_id, mint_info in sorted(ft_atomicals.items()):
+            real_compact_atomical_id_order.append(atomical_id)
+        for atomical_id, mint_info in sorted(ft_atomicals.items()):
             expected_output_indexes = []
             remaining_value = mint_info['value']
             # The FT type has the 'split' (y) method which allows us to selectively split (skip) a certain total number of token units (satoshis)
@@ -1697,7 +1699,6 @@ class BlockProcessor:
             total_amount_to_skip = 0
             # Uses the compact form of atomical id as the keys for developer convenience
             compact_atomical_id = location_id_bytes_to_compact(atomical_id)
-            real_compact_atomical_id_order.append(atomical_id)
             total_amount_to_skip_potential = operations_found_at_inputs.get('payload').get(compact_atomical_id)
             # Sanity check to ensure it is a non-negative integer
             skip_value[atomical_id] = total_amount_to_skip_potential
