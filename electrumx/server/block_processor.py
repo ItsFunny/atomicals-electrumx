@@ -289,6 +289,7 @@ class BlockProcessor:
         self.atomicals_rpc_general_cache = pylru.lrucache(100000)
         self.atomicals_dft_mint_count_cache = pylru.lrucache(1000)        # tracks number of minted tokens per dft mint to make processing faster per blocks
         self.trace_cache = []
+        self.scf_cnt=0
     async def run_in_thread_with_lock(self, func, *args):
         # Run in a thread to prevent blocking.  Shielded so that
         # cancellations from shutdown don't lose work - when the task
@@ -453,7 +454,9 @@ class BlockProcessor:
     async def _maybe_flush(self):
         # If caught up, flush everything as client queries are
         # performed on the DB.
-        await self.flush(True)
+        self.scf_cnt+=1
+        if self.scf_cnt%20==0:
+            await self.flush(True)
         # if self._caught_up_event.is_set():
         #     await self.flush(True)
         # elif time.monotonic() > self.next_cache_check:
