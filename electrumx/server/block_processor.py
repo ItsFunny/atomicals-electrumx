@@ -446,6 +446,7 @@ class BlockProcessor:
                          self.dmpay_data_cache, self.container_data_cache, self.distmint_data_cache, self.state_data_cache)
 
     async def flush(self, flush_utxos):
+        print(f'scf flush {self.height}')
         def flush():
             self.db.flush_dbs(self.flush_data(), flush_utxos,
                               self.estimate_txs_remaining)
@@ -455,7 +456,7 @@ class BlockProcessor:
         # If caught up, flush everything as client queries are
         # performed on the DB.
         self.scf_cnt+=1
-        if self.scf_cnt%30==0:
+        if self.scf_cnt%10==0:
             await self.flush(True)
         # if self._caught_up_event.is_set():
         #     await self.flush(True)
