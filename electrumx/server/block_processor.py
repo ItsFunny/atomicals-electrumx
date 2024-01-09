@@ -455,9 +455,9 @@ class BlockProcessor:
     async def _maybe_flush(self):
         # If caught up, flush everything as client queries are
         # performed on the DB.
-        self.scf_cnt+=1
-        if self.scf_cnt%10==0:
-            await self.flush(True)
+        # self.scf_cnt+=1
+        # if self.scf_cnt%10==0:
+        await self.flush(True)
         # if self._caught_up_event.is_set():
         #     await self.flush(True)
         # elif time.monotonic() > self.next_cache_check:
