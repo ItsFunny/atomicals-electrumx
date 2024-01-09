@@ -6,7 +6,7 @@ import electrumx.lib.util
 from cbor2 import dumps, loads, CBORDecodeError
 
 from electrumx.lib.script import SCRIPTHASH_LEN, is_unspendable_genesis, is_unspendable_legacy
-from electrumx.lib.script2addr import get_address_from_output_script
+from electrumx.lib.script2addr import get_address_or_scripthash_from_output_script
 from electrumx.lib.util import pack_le_uint64, unpack_le_uint64
 from electrumx.lib.hash import double_sha256, hash_to_hex_str, HASHX_LEN
 from electrumx.lib.util_atomicals import location_id_bytes_to_compact
@@ -132,7 +132,7 @@ def add_ft_split_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inp
         value = txout.value
         vout.append({
             "output_index": idx,
-            "address": get_address_from_output_script(txout.pk_script),
+            "address": get_address_or_scripthash_from_output_script(txout.pk_script),
             "value": value
         })
     trace_cache.append(make_point_dict(tx_hash, {"op": "split"}, {
@@ -207,7 +207,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
         value = txout.value
         vout.append({
             "output_index": idx,
-            "address": get_address_from_output_script(txout.pk_script),
+            "address": get_address_or_scripthash_from_output_script(txout.pk_script),
             "value": value
         })
     trace_cache.append(make_point_dict(tx_hash, {"op": "transfer"}, {
@@ -220,7 +220,7 @@ def add_ft_transfer_trace(trace_cache, tx_hash, tx, atomicals_spent_at_inputs, a
 
 def add_dmt_trace(trace_cache, payload, tx_hash, pubkey_script, atomical_id, mint_amount, expected_output_index):
     inscription_context_dict = {
-        "address": get_address_from_output_script(pubkey_script),
+        "address": get_address_or_scripthash_from_output_script(pubkey_script),
         "time": get_from_map(payload["args"], "time"),
         "nonce": get_from_map(payload["args"], "nonce"),
         "bitworkc": get_from_map(payload["args"], "bitworkc"),
@@ -245,7 +245,7 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
         "atomical_id": location_id_bytes_to_compact(atomical_id),
         "txid": hash_to_hex_str(tx_hash),
         "output_index": tx_out_index,
-        "address": get_address_from_output_script(pubkey_script),
+        "address": get_address_or_scripthash_from_output_script(pubkey_script),
         "desc": get_from_map(operations_found_at_inputs, "desc"),
         "decimals": get_from_map(operations_found_at_inputs, "decimals"),
         "tx_out_value": max_supply,
@@ -293,4 +293,4 @@ def get_script_from_by_locatin_id(key, cache, db):
     script = cache.get(key)
     if not script:
         script = db.utxo_db.get(key)
-    return get_address_from_output_script(script)
+    return get_address_or_scripthash_from_output_script(script)

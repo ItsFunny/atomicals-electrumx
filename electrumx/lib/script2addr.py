@@ -4,6 +4,7 @@ from typing import Optional, Callable, Union
 import hashlib
 
 from electrumx.lib import segwit_addr
+from electrumx.lib.hash import double_sha256, hash_to_hex_str
 from electrumx.lib.script import OpCodes
 
 
@@ -268,11 +269,11 @@ ADDRTYPE_P2SH = get_addr_type_p2sh()
 SEGWIT_HRP = get_segwit_hrp()
 
 
-def get_address_from_output_script(_bytes: bytes) -> Optional[str]:
+def get_address_or_scripthash_from_output_script(_bytes: bytes) -> Optional[str]:
     try:
         decoded = [x for x in script_GetOp(_bytes)]
     except MalformedBitcoinScript:
-        return None
+        return hash_to_hex_str(double_sha256(_bytes)) # for multi sign
     # p2pkh
     if match_script_against_template(decoded, SCRIPTPUBKEY_TEMPLATE_P2PKH):
         return hash160_to_p2pkh(decoded[2][1])
@@ -292,4 +293,4 @@ def get_address_from_output_script(_bytes: bytes) -> Optional[str]:
         if match_script_against_template(decoded, match):
             return hash_to_segwit_addr(decoded[1][1], witver=witver)
 
-    return None
+    return hash_to_hex_str(double_sha256(_bytes)) # for multi sign
