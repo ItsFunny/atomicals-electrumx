@@ -1462,6 +1462,7 @@ class BlockProcessor:
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
             if isDecentralized:
+                print(f'scf--add_dft_trace- {height}')
                 add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id,mint_info)
             else:
                 # The atomical would always be created at the first output
