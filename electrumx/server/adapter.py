@@ -236,7 +236,15 @@ def add_dmt_trace(trace_cache, payload, tx_hash, pubkey_script, atomical_id, min
 
 
 def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, pubkey_script, atomical_id,
-                 tx_out_index):
+                 tx_out_index,mint_info):
+    owner = get_address_or_scripthash_from_output_script(mint_info.get('reveal_location_script'))
+    commit_txid = hash_to_hex_str(mint_info.get('commit_txid'))
+    commit_location = location_id_bytes_to_compact(mint_info.get('commit_location'))
+    commit_height = mint_info.get('commit_height')
+    reveal_location_txid = hash_to_hex_str(mint_info.get('reveal_location_txid'))
+    reveal_location = location_id_bytes_to_compact(mint_info.get('reveal_location'))
+    reveal_location_height = mint_info.get('reveal_location_height')
+
     inscription_context_dict = {
         "time": get_from_map(operations_found_at_inputs["args"], "time"),
         "nonce": get_from_map(operations_found_at_inputs["args"], "nonce"),
@@ -249,6 +257,13 @@ def add_ft_trace(trace_cache, operations_found_at_inputs, tx_hash, max_supply, p
         "desc": get_from_map(operations_found_at_inputs, "desc"),
         "decimals": get_from_map(operations_found_at_inputs, "decimals"),
         "tx_out_value": max_supply,
+        "owner": owner,
+        "commit_txid": commit_txid,
+        "commit_location": commit_location,
+        "commit_block_height": commit_height,
+        "reveal_txid": reveal_location_txid,
+        "reveal_location": reveal_location,
+        "reveal_block_height": reveal_location_height
     }
     trace_cache.append(make_point_dict(tx_hash, {
         "op": "dmint"
@@ -261,7 +276,15 @@ def get_from_map(m, key):
     return ""
 
 
-def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id):
+def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id,mint_info):
+    owner = get_address_or_scripthash_from_output_script(mint_info.get('reveal_location_script'))
+    commit_txid = hash_to_hex_str(mint_info.get('commit_txid'))
+    commit_location = location_id_bytes_to_compact(mint_info.get('commit_location'))
+    commit_height = mint_info.get('commit_height')
+    reveal_location_txid = hash_to_hex_str(mint_info.get('reveal_location_txid'))
+    reveal_location = location_id_bytes_to_compact(mint_info.get('reveal_location'))
+    reveal_location_height = mint_info.get('reveal_location_height')
+
     inscription_context_dict = {
         "txid": hash_to_hex_str(tx_hash),
         "time": get_from_map(operations_found_at_inputs["args"], "time"),
@@ -275,6 +298,17 @@ def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id)
         "atomical_id": location_id_bytes_to_compact(atomical_id),
         "desc": get_from_map(operations_found_at_inputs, "desc"),
         "name": get_from_map(operations_found_at_inputs, "name"),
+        "owner":owner,
+        "commit_txid":commit_txid,
+        "commit_location":commit_location,
+        "commit_block_height":commit_height,
+        "reveal_txid":reveal_location_txid,
+        "reveal_location":reveal_location,
+        "reveal_block_height":reveal_location_height
+
+
+
+
     }
     trace_cache.append(make_point_dict(tx_hash, {
         "op": "deploy"

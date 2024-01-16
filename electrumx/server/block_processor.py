@@ -15,6 +15,7 @@ from typing import Sequence, Tuple, List, Callable, Optional, TYPE_CHECKING, Typ
 from aiorpcx import run_in_thread, CancelledError
 
 import electrumx
+from electrumx.lib.script2addr import get_address_or_scripthash_from_output_script
 from electrumx.server.adapter import get_script_from_by_locatin_id, little_endian_to_big_endian, add_dft_trace, \
     add_ft_trace, add_ft_split_transfer_trace, add_ft_transfer_trace, add_dmt_trace, flush_trace
 from electrumx.server.daemon import DaemonError, Daemon
@@ -1461,12 +1462,12 @@ class BlockProcessor:
                     self.logger.info(f'create_or_delete_atomical: validate_and_create_ft_mint_utxo returned FALSE in Transaction {hash_to_hex_str(tx_hash)}. Skipping...') 
                     return None
             if isDecentralized:
-                add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id)
+                add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id,mint_info)
             else:
                 # The atomical would always be created at the first output
                 tx_out_index = 0
                 add_ft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, mint_info['$max_supply'],
-                             txout.pk_script, atomical_id, tx_out_index)
+                             txout.pk_script, atomical_id, tx_out_index,mint_info)
         else: 
             raise IndexError(f'Fatal index error Create Invalid')
         
