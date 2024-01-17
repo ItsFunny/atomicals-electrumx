@@ -1463,7 +1463,8 @@ class BlockProcessor:
                     return None
             if isDecentralized:
                 print(f'scf--add_dft_trace- {height}')
-                add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id,mint_info)
+
+                add_dft_trace(self.trace_cache, operations_found_at_inputs["payload"], tx_hash, atomical_id,mint_info,txout)
             else:
                 # The atomical would always be created at the first output
                 tx_out_index = 0

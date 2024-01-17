@@ -276,7 +276,7 @@ def get_from_map(m, key):
     return ""
 
 
-def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id,mint_info):
+def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id,mint_info,txout):
     owner = get_address_or_scripthash_from_output_script(mint_info.get('reveal_location_script',''))
     commit_txid = hash_to_hex_str(mint_info.get('commit_txid',''))
     commit_location = location_id_bytes_to_compact(mint_info.get('commit_location',''))
@@ -287,6 +287,8 @@ def add_dft_trace(trace_cache, operations_found_at_inputs, tx_hash, atomical_id,
 
     inscription_context_dict = {
         "txid": hash_to_hex_str(tx_hash),
+        "to_address":get_address_or_scripthash_from_output_script(txout.pk_script),
+        "to_value_sats":txout.value,
         "time": get_from_map(operations_found_at_inputs["args"], "time"),
         "nonce": get_from_map(operations_found_at_inputs["args"], "nonce"),
         "bitworkc": get_from_map(operations_found_at_inputs["args"], "bitworkc"),
